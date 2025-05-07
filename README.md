@@ -1,73 +1,120 @@
-# Welcome to your Lovable project
+# 🧠 AlphaFlow - AI Agent Workflow Engine
 
-## Project info
+AlphaFlow is a visual, modular, and extensible **AI Agent Workflow System** built using **React Flow**. It allows developers and non-technical users to design powerful automated workflows combining logic, integrations, and AI (GPT, APIs, databases...).
 
-**URL**: https://lovable.dev/projects/bc8f8cbd-c5d0-4f81-88b8-7c740bcb3bd3
+---
 
-## How can I edit this code?
+## 🚀 Features
 
-There are several ways of editing your application.
+* 📌 **Visual Node-Based Editor** using [React Flow](https://reactflow.dev/)
+* 🧠 **GPT Integration** – generate and analyze content dynamically
+* 🌐 **API Requests** – connect to any external RESTful service
+* 📅 **User Inputs** – capture inputs from various channels (chat, forms...)
+* ⚙️ **Conditionals & Logic** – powerful control flow nodes (If, Switch, Loops...)
+* 📂 **Database Access** – read/write to SQL/NoSQL databases
+* ⏳ **Delay & Wait Nodes** – async flows with timers and triggers
+* 🔐 **Encryption/Decryption** nodes
+* 📄 **File Upload/Download** support
+* 📊 **Debugging tools** with Log Nodes
+* 🧹 Fully **extensible node architecture**
 
-**Use Lovable**
+---
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/bc8f8cbd-c5d0-4f81-88b8-7c740bcb3bd3) and start prompting.
+## 🧹 Node Types
 
-Changes made via Lovable will be committed automatically to this repo.
+AlphaFlow supports over 25+ modular node types including:
 
-**Use your preferred IDE**
+| Node Type           | Purpose                                 |
+| ------------------- | --------------------------------------- |
+| `StartNode`         | Workflow entry point                    |
+| `MessageNode`       | Send a message (WhatsApp, Telegram...)  |
+| `GPTNode`           | Interact with OpenAI/GPT                |
+| `IfNode`            | Conditional branching (true/false)      |
+| `SwitchNode`        | Multi-path branching                    |
+| `APICallNode`       | Call external APIs                      |
+| `SaveVariableNode`  | Save context data                       |
+| `LoopNode`          | Repeat execution N times or until logic |
+| `EndNode`           | Terminate workflow                      |
+| `CustomScriptNode`  | Run external Python/JS logic            |
+| `FormNode`          | Collect structured input from user      |
+| ...and many more... | Full table in the docs                  |
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+---
 
-Follow these steps:
+## 🏗️ Tech Stack
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+* [React](https://reactjs.org/)
+* [React Flow](https://reactflow.dev/)
+* [TypeScript](https://www.typescriptlang.org/)
+* [Tailwind CSS](https://tailwindcss.com/)
+* \[Node.js / Express (optional)] for backend integrations
+* [OpenAI API](https://platform.openai.com/)
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+---
 
-# Step 3: Install the necessary dependencies.
-npm i
+## 📂 Project Structure
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+```
+alphaflow/
+├── src/
+│   ├── nodes/               # All node definitions
+│   ├── engine/              # Workflow engine logic
+│   ├── components/          # React Flow UI components
+│   ├── context/             # Global state/context
+│   └── App.tsx              # Entry point
+├── public/
+├── package.json
+├── tailwind.config.js
+└── README.md
+```
+
+---
+
+## 🛠️ Setup & Development
+
+```bash
+# 1. Clone the repo
+git clone https://github.com/deman404/alphaflow.git
+cd alphaflow
+
+# 2. Install dependencies
+npm install
+
+# 3. Start dev server
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+---
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+## 🧪 Usage
 
-**Use GitHub Codespaces**
+* Drag and drop nodes from the panel
+* Connect them using edges
+* Configure node settings in the right sidebar
+* Run the workflow with the "Start" node
+* Use the log panel to debug outputs
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+---
 
-## What technologies are used for this project?
+## 🧱 Extending
 
-This project is built with:
+To add a custom node:
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+1. Create a new file in `src/nodes/MyNewNode.tsx`
+2. Define the `type`, `inputs`, `outputs`, and `onExecute()`
+3. Register it in the global node registry
 
-## How can I deploy this project?
+---
 
-Simply open [Lovable](https://lovable.dev/projects/bc8f8cbd-c5d0-4f81-88b8-7c740bcb3bd3) and click on Share -> Publish.
+## 📄 License
 
-## Can I connect a custom domain to my Lovable project?
+MIT License © 2025 \[YourName]
 
-Yes, you can!
+---
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+## 🤛 Contributions
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+Contributions, node ideas, and bug reports are welcome!
+
+> Built with love for automating the future. ❤️
