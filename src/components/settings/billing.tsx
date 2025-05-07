@@ -31,11 +31,59 @@ import {
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import { supabase } from "../../../supabaseClient";
-
+import PaymentsCard from "../useComp/PaymentsCard";
 export default function billing() {
-  const handleSave = () => {
-    toast.success("Settings updated successfully");
+  const [session, setSession] = useState(null);
+  const [company, setCompany] = useState("");
+  const [role, setRole] = useState("");
+  const [userProfile, setUserProfile] = useState(null);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      if (session?.user?.id) {
+        fetchProfileOrFallback(session);
+      }
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+      if (session?.user?.id) {
+        fetchProfileOrFallback(session);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const fetchProfileOrFallback = async (session) => {
+    const userId = session.user.id;
+
+    const { data, error } = await supabase
+      .from("profile")
+      .select("*")
+      .eq("user_id", userId)
+      .single();
+
+    if (error || !data) {
+      console.error("Profile not found, falling back to session data:", error);
+
+      // Fallback to session data
+      const fallbackProfile = {
+        user_id: userId,
+        name: session.user.user_metadata?.name,
+        email: session.user.user_metadata?.email,
+        picture: session.user.user_metadata?.picture,
+      };
+      setUserProfile(fallbackProfile);
+    } else {
+      console.log("Profile loaded from DB:", data);
+      setUserProfile(data);
+    }
   };
+
   return (
     <Card className="bg-card/50 backdrop-blur-sm border border-white/10">
       <CardHeader>
@@ -48,38 +96,26 @@ export default function billing() {
         <div className="space-y-6">
           <div className="bg-primary/10 border border-primary/20 rounded-lg p-4 flex items-center justify-between">
             <div>
-              <p className="font-semibold">Pro Plan</p>
+              <p className="font-semibold">{userProfile?.plans} Plan</p>
               <p className="text-sm text-muted-foreground">
-                $49/month, renews on June 1, 2025
+                {userProfile?.plans === "free"
+                  ? ""
+                  : userProfile?.plans === "starter"
+                  ? "49$"
+                  : "N/A"}
               </p>
             </div>
             <Button variant="outline">Change Plan</Button>
           </div>
 
-          <Separator />
+          {/* <Separator />
 
           <div className="space-y-4">
             <h3 className="text-lg font-medium">Payment Method</h3>
             <div className="space-y-4">
-              <div className="flex justify-between items-center p-3 bg-white/5 border border-white/10 rounded-lg">
-                <div className="flex items-center">
-                  <div className="w-10 h-6 bg-white/20 rounded mr-3 flex items-center justify-center text-xs">
-                    VISA
-                  </div>
-                  <div>
-                    <p className="font-medium">Visa ending in 4242</p>
-                    <p className="text-xs text-muted-foreground">
-                      Expires 12/2026
-                    </p>
-                  </div>
-                </div>
-                <Button variant="ghost" size="sm">
-                  Edit
-                </Button>
-              </div>
               <Button variant="outline">Add Payment Method</Button>
             </div>
-          </div>
+          </div> */}
 
           <Separator />
 
@@ -91,7 +127,7 @@ export default function billing() {
               </Button>
             </div>
 
-            <div className="space-y-3">
+            {/* <div className="space-y-3">
               <div className="flex justify-between items-center py-2 border-b border-white/10">
                 <div>
                   <p className="font-medium">May 1, 2025</p>
@@ -134,7 +170,7 @@ export default function billing() {
                   </Button>
                 </div>
               </div>
-            </div>
+            </div> */}
           </div>
 
           <Separator />
@@ -149,17 +185,21 @@ export default function billing() {
                 <Input
                   id="billing-email"
                   type="email"
-                  defaultValue="billing@acme.com"
+                  defaultValue={userProfile?.email}
+                  readOnly
                 />
               </div>
               <div className="space-y-2">
                 <label htmlFor="company-name" className="text-sm font-medium">
                   Company Name
                 </label>
-                <Input id="company-name" defaultValue="Acme Inc." />
+                <Input
+                  id="company-name"
+                  defaultValue={userProfile?.company}
+                  readOnly
+                />
               </div>
             </div>
-            <Button onClick={handleSave}>Save Contact Info</Button>
           </div>
         </div>
       </CardContent>
