@@ -9,32 +9,98 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
-import { Textarea } from "@/components/ui/textarea";
-import {
-  LayoutDashboard,
-  Plus,
-  Search,
-  Settings as SettingsIcon,
-  User,
-  BarChart3,
-  FileText,
-  LogOut,
-  Bell,
-  Shield,
-  CreditCard,
-  Server,
-  KeyRound,
-  Mail,
-  Globe,
-  Clock,
-} from "lucide-react";
-import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import { supabase } from "../../../supabaseClient";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { useNavigate } from "react-router-dom";
 
 export default function account() {
+  const [session, setSession] = useState(null);
+  const [email, setEmail] = useState("");
+  const [role, setRole] = useState("");
+  const [userProfile, setUserProfile] = useState(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
+
+  const navigate = useNavigate();
   const handleSave = () => {
     toast.success("Settings updated successfully");
+  };
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      if (session?.user?.id) {
+        fetchProfileOrFallback(session);
+      }
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+      if (session?.user?.id) {
+        fetchProfileOrFallback(session);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const fetchProfileOrFallback = async (session) => {
+    const userId = session.user.id;
+
+    const { data, error } = await supabase
+      .from("profile")
+      .select("*")
+      .eq("user_id", userId)
+      .single();
+
+    if (error || !data) {
+      console.error("Profile not found, falling back to session data:", error);
+
+      // Fallback to session data
+      const fallbackProfile = {
+        user_id: userId,
+        name: session.user.user_metadata?.name,
+        email: session.user.user_metadata?.email,
+        picture: session.user.user_metadata?.picture,
+      };
+      setUserProfile(fallbackProfile);
+    } else {
+      console.log("Profile loaded from DB:", data);
+      setUserProfile(data);
+    }
+  };
+
+  const DeleteAcount = async () => {
+    if (email === userProfile?.email) {
+      const { error } = await supabase.auth.admin.deleteUser(
+        userProfile?.user_id
+      );
+      supabase.auth
+        .signOut()
+        .then(() => {
+          toast.success("Account deleted successfully");
+          setDialogOpen(false);
+          navigate("/");
+        })
+        .catch((error) => {
+          console.error("Error deleting account:", error);
+          toast.error("Error deleting account");
+        });
+    } else if (email === "") {
+      toast.error("Please enter your email address to confirm deletion");
+    } else {
+      toast.error("Email address does not match");
+    }
   };
   return (
     <Card className="bg-card/50 backdrop-blur-sm border border-white/10">
@@ -51,55 +117,29 @@ export default function account() {
             <div className="grid grid-cols-1 gap-4">
               <div className="flex justify-between items-center py-2 border-b border-white/10">
                 <span className="text-muted-foreground">Email</span>
-                <span>alex@example.com</span>
+                <span>{userProfile?.email}</span>
               </div>
               <div className="flex justify-between items-center py-2 border-b border-white/10">
                 <span className="text-muted-foreground">Account Type</span>
                 <span className="bg-primary/20 text-primary text-xs px-2 py-1 rounded-full">
-                  Pro Plan
+                  {userProfile?.plans}
                 </span>
               </div>
               <div className="flex justify-between items-center py-2 border-b border-white/10">
                 <span className="text-muted-foreground">Member Since</span>
-                <span>March 15, 2025</span>
+                <span>
+                  {new Date(userProfile?.created_at).toLocaleDateString(
+                    undefined,
+                    {
+                      year: "numeric",
+                      month: "long",
+                      day: "numeric",
+                    }
+                  )}
+                </span>
               </div>
             </div>
           </div>
-
-          <Separator />
-
-          <div className="space-y-4">
-            <h3 className="text-lg font-medium">Security</h3>
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <label
-                  htmlFor="current-password"
-                  className="text-sm font-medium"
-                >
-                  Current Password
-                </label>
-                <Input id="current-password" type="password" />
-              </div>
-              <div className="space-y-2">
-                <label htmlFor="new-password" className="text-sm font-medium">
-                  New Password
-                </label>
-                <Input id="new-password" type="password" />
-              </div>
-              <div className="space-y-2">
-                <label
-                  htmlFor="confirm-password"
-                  className="text-sm font-medium"
-                >
-                  Confirm New Password
-                </label>
-                <Input id="confirm-password" type="password" />
-              </div>
-              <Button onClick={handleSave}>Update Password</Button>
-            </div>
-          </div>
-
-          <Separator />
 
           <div className="space-y-4">
             <h3 className="text-lg font-medium">Two-Factor Authentication</h3>
@@ -114,7 +154,7 @@ export default function account() {
             </div>
           </div>
 
-          <Separator />
+          {/* <Separator />
 
           <div className="space-y-4">
             <h3 className="text-lg font-medium">Sessions</h3>
@@ -160,7 +200,7 @@ export default function account() {
                 </Button>
               </div>
             </div>
-          </div>
+          </div> */}
 
           <Separator />
 
@@ -172,7 +212,42 @@ export default function account() {
                 Once you delete your account, there is no going back. Please be
                 certain.
               </p>
-              <Button variant="destructive">Delete Account</Button>
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button variant="destructive">Delete Account</Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-[425px]">
+                  <DialogHeader>
+                    <DialogTitle>Delete Account</DialogTitle>
+                    <DialogDescription>
+                      type down your email address {userProfile?.email} to
+                      confirm account deletion.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="grid gap-4 py-4">
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      
+                      <Input
+                        id="name"
+                        placeholder="email address"
+                        onChange={(e) => setEmail(e.target.value)}
+                        className="col-span-4"
+                      />
+                    </div>
+                  </div>
+                  <DialogFooter>
+                    <Button
+                      variant="destructive"
+                      type="submit"
+                      onClick={() => {
+                        DeleteAcount();
+                      }}
+                    >
+                      Delete Account
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
             </div>
           </div>
         </div>

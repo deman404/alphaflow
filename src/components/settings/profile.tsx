@@ -12,7 +12,6 @@ import { Separator } from "@/components/ui/separator";
 import { Settings as SettingsIcon, User } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "../../../supabaseClient";
-import { set } from "date-fns";
 export default function profile() {
   const [session, setSession] = useState(null);
   const [company, setCompany] = useState("");
@@ -80,7 +79,7 @@ export default function profile() {
       picture: session?.user?.user_metadata?.picture,
       company: company,
       role: role,
-      plans: null,
+      plans: "free",
     };
 
     const { error } = await supabase
@@ -122,7 +121,7 @@ export default function profile() {
               <p className="text-sm text-muted-foreground">
                 Your photo will be used on your profile and in comments.
               </p>
-              <div className="flex gap-2 mt-2">
+              {/* <div className="flex gap-2 mt-2">
                 <Button variant="outline" size="sm">
                   Upload
                 </Button>
@@ -133,7 +132,7 @@ export default function profile() {
                 >
                   Remove
                 </Button>
-              </div>
+              </div> */}
             </div>
           </div>
 
