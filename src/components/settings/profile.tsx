@@ -12,48 +12,87 @@ import { Separator } from "@/components/ui/separator";
 import { Settings as SettingsIcon, User } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "../../../supabaseClient";
+import { set } from "date-fns";
 export default function profile() {
   const [session, setSession] = useState(null);
-  const [users, setUsers] = useState([]);
-  const [error, setError] = useState(null);
+  const [company, setCompany] = useState("");
+  const [role, setRole] = useState("");
+  const [userProfile, setUserProfile] = useState(null);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
+      if (session?.user?.id) {
+        fetchProfileOrFallback(session);
+      }
     });
+
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
+      if (session?.user?.id) {
+        fetchProfileOrFallback(session);
+      }
     });
+
     return () => subscription.unsubscribe();
   }, []);
 
-  useEffect(() => {
-    const handlerData = async () => {
-      const { data, error } = await supabase
-        .from("users")
-        .select("name, user_id, company ");
+  const fetchProfileOrFallback = async (session) => {
+    const userId = session.user.id;
 
-      if (error) {
-        setError(error.message);
-        return;
-      }
+    const { data, error } = await supabase
+      .from("profile")
+      .select("*")
+      .eq("user_id", userId)
+      .single();
 
-      const mappedData = data.map((user) => ({
-        Name: user.name,
-        Id: user.user_id,
-        company : user.company
-      }));
+    if (error || !data) {
+      console.error("Profile not found, falling back to session data:", error);
 
-      setUsers(mappedData);
+      // Fallback to session data
+      const fallbackProfile = {
+        user_id: userId,
+        name: session.user.user_metadata?.name,
+        email: session.user.user_metadata?.email,
+        picture: session.user.user_metadata?.picture,
+      };
+      setUserProfile(fallbackProfile);
+    } else {
+      console.log("Profile loaded from DB:", data);
+      setUserProfile(data);
+    }
+  };
+
+  const handleSave = async () => {
+    const userId = session?.user?.id;
+
+    if (!userId) {
+      toast.error("User session not found.");
+      return;
+    }
+
+    const profileData = {
+      user_id: userId,
+      name: session?.user?.user_metadata?.name,
+      email: session?.user?.user_metadata?.email,
+      picture: session?.user?.user_metadata?.picture,
+      company: company,
+      role: role,
+      plans: null,
     };
 
-    handlerData();
-  }, []);
+    const { error } = await supabase
+      .from("profile")
+      .upsert(profileData, { onConflict: "user_id" });
 
-  const handleSave = () => {
-    toast.success("Settings updated successfully");
+    if (error) {
+      toast.error("Error updating settings");
+      console.error(error);
+    } else {
+      toast.success("Settings updated successfully");
+    }
   };
 
   return (
@@ -69,9 +108,8 @@ export default function profile() {
               {session?.user?.user_metadata?.avatar_url ? (
                 <>
                   <img
-                    src={session?.user?.user_metadata?.avatar_url}
+                    src={userProfile?.picture}
                     alt="User Avatar"
-                    onError={() => console.log("Error loading image")}
                     className="w-20 h-20 rounded-full"
                   />
                 </>
@@ -108,7 +146,7 @@ export default function profile() {
               </label>
               <Input
                 id="first-name "
-                defaultValue={session?.user?.user_metadata?.name}
+                defaultValue={userProfile?.name}
                 readOnly
               />
             </div>
@@ -120,7 +158,7 @@ export default function profile() {
               <Input
                 id="email"
                 type="email"
-                defaultValue={session?.user?.user_metadata?.email}
+                defaultValue={userProfile?.email}
                 readOnly
               />
             </div>
@@ -133,13 +171,27 @@ export default function profile() {
               <label htmlFor="company" className="text-sm font-medium">
                 Company
               </label>
-              <Input id="company" placeholder="name of company" value={users} />
+              <Input
+                id="company"
+                placeholder="name of company"
+                defaultValue={userProfile?.company}
+                onChange={(e) => {
+                  setCompany(e.target.value);
+                }}
+              />
             </div>
             <div className="space-y-2">
               <label htmlFor="role" className="text-sm font-medium">
                 Role
               </label>
-              <Input id="role" defaultValue="Product Manager" />
+              <Input
+                id="role"
+                placeholder="your role in the company"
+                defaultValue={userProfile?.role}
+                onChange={(e) => {
+                  setRole(e.target.value);
+                }}
+              />
             </div>
           </div>
 
