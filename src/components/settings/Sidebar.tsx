@@ -9,6 +9,8 @@ import {
   BarChart3,
   FileText,
   LogOut,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 
@@ -39,17 +41,17 @@ const Sidebar: React.FC<SidebarProps> = ({
                 Alpha<span className="text-primary">flow</span>
               </Link>
             )}
-            {sidebarCollapsed && (
+            {/* {sidebarCollapsed && (
               <Link to="/" className="text-xl font-bold">
                 <span className="text-primary">A</span>
               </Link>
-            )}
+            )} */}
           </div>
           <button
-            className="w-5 h-5 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors"
+            className="w-6 h-6 rounded bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors"
             onClick={onSidebarToggle}
           >
-            {sidebarCollapsed ? "→" : "←"}
+            {sidebarCollapsed ? <ChevronRight className="text-primary" /> : <ChevronLeft />}
           </button>
         </div>
 
@@ -107,12 +109,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                 {!sidebarCollapsed && "Settings"}
               </Link>
             </Button>
-            <Button variant="ghost" className="w-full justify-start">
-              <User
-                className={`h-4 w-4 ${sidebarCollapsed ? "mr-0" : "mr-2"}`}
-              />
-              {!sidebarCollapsed && "Profile"}
-            </Button>
+           
           </div>
         </div>
 

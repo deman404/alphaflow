@@ -19,33 +19,73 @@ import LoggedInWelcome from "@/components/LoggedInWelcome";
 import { supabase } from "../../supabaseClient";
 
 const Signup = () => {
-  const handleEmailSignup = (e: React.FormEvent) => {
-    e.preventDefault();
-    // In a real app, this would create an account with a backend
-    toast.info(
-      "Email signup functionality will be implemented with backend integration"
-    );
-  };
-
-  const handleGoogleSignup = async () => {
-    toast.info("You login with Google");
-    await supabase.auth.signInWithOAuth({
-      provider: "google",
-    });
-  };
-
   const [session, setSession] = useState(null);
+  const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(false);
+
   useEffect(() => {
+    // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
+      if (session) handleNewUser(session.user);
     });
+
+    // Listen for auth state changes
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
       setSession(session);
+      if (event === "SIGNED_IN" && session) {
+        await handleNewUser(session.user);
+      }
     });
+
     return () => subscription.unsubscribe();
   }, []);
+
+  const handleNewUser = async (user, retries = 3) => {
+    try {
+      const { error } = await supabase
+        .from('profile')
+        .upsert({
+          user_id: user.id,
+          name: user.user_metadata?.full_name || user.email,
+          email: user.email,
+          company: null
+        }, { onConflict: 'user_id' });
+  
+      if (error) throw error;
+      
+    } catch (error) {
+      if (retries > 0 && error.message.includes('permission denied')) {
+        // Wait 500ms and try again
+        await new Promise(resolve => setTimeout(resolve, 500));
+        return handleNewUser(user, retries - 1);
+      }
+      throw error;
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: window.location.origin, // Redirect to current origin
+        },
+      });
+
+      if (error) throw error;
+    } catch (error) {
+      setError(error.message);
+      toast.error("Login failed");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   if (!session) {
     return (
       <div className="min-h-screen bg-background text-foreground flex flex-col">
@@ -63,13 +103,11 @@ const Signup = () => {
               <Button
                 variant="outline"
                 className="bg-white text-black hover:bg-gray-100 border border-gray-200"
-                onClick={handleGoogleSignup}
+                onClick={handleGoogleLogin}
               >
                 <FcGoogle className="mr-2 h-5 w-5" />
                 Sign up with Google
               </Button>
-
-              
             </CardContent>
           </Card>
         </div>

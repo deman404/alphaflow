@@ -14,6 +14,8 @@ import { toast } from "sonner";
 import { supabase } from "../../../supabaseClient";
 export default function profile() {
   const [session, setSession] = useState(null);
+  const [users, setUsers] = useState([]);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -25,6 +27,29 @@ export default function profile() {
       setSession(session);
     });
     return () => subscription.unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    const handlerData = async () => {
+      const { data, error } = await supabase
+        .from("users")
+        .select("name, user_id, company ");
+
+      if (error) {
+        setError(error.message);
+        return;
+      }
+
+      const mappedData = data.map((user) => ({
+        Name: user.name,
+        Id: user.user_id,
+        company : user.company
+      }));
+
+      setUsers(mappedData);
+    };
+
+    handlerData();
   }, []);
 
   const handleSave = () => {
@@ -108,7 +133,7 @@ export default function profile() {
               <label htmlFor="company" className="text-sm font-medium">
                 Company
               </label>
-              <Input id="company" defaultValue="Acme Inc." />
+              <Input id="company" placeholder="name of company" value={users} />
             </div>
             <div className="space-y-2">
               <label htmlFor="role" className="text-sm font-medium">

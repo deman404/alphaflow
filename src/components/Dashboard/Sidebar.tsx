@@ -81,7 +81,11 @@ const Sidebar: React.FC<SidebarProps> = ({
             className="w-6 h-6 rounded  bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors"
             onClick={onSidebarToggle}
           >
-            {sidebarCollapsed ? <ChevronRight className="text-primary" /> : <ChevronLeft />}
+            {sidebarCollapsed ? (
+              <ChevronRight className="text-primary" />
+            ) : (
+              <ChevronLeft />
+            )}
           </button>
         </div>
 
@@ -108,12 +112,7 @@ const Sidebar: React.FC<SidebarProps> = ({
               />
               {!sidebarCollapsed && "Workflows"}
             </Button>
-            <Button variant="ghost" className="w-full justify-start">
-              <Activity
-                className={`h-4 w-4 ${sidebarCollapsed ? "mr-0" : "mr-2"}`}
-              />
-              {!sidebarCollapsed && "Executions"}
-            </Button>
+
             <Button variant="ghost" className="w-full justify-start">
               <BarChart3
                 className={`h-4 w-4 ${sidebarCollapsed ? "mr-0" : "mr-2"}`}
@@ -140,12 +139,6 @@ const Sidebar: React.FC<SidebarProps> = ({
                 />
                 {!sidebarCollapsed && "Settings"}
               </Link>
-            </Button>
-            <Button variant="ghost" className="w-full justify-start">
-              <User
-                className={`h-4 w-4 ${sidebarCollapsed ? "mr-0" : "mr-2"}`}
-              />
-              {!sidebarCollapsed && "Profile"}
             </Button>
           </div>
         </div>
