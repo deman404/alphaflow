@@ -22,6 +22,7 @@ import Terms from "./pages/Terms";
 import Dashboard from "./pages/Dashboard";
 import Settings from "./pages/Settings";
 import Workflow from "./pages/Workflow";
+import WorkflowEditor from "./pages/WorkflowEditor";
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -49,6 +50,7 @@ const App = () => (
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="/workflow" element={<Workflow />} />
+          <Route path="/workflows/:id" element={<WorkflowEditor />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

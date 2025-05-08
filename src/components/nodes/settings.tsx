@@ -25,20 +25,6 @@ export function TextNode({
     label: string;
   };
 }) {
-  const [inputValue, setInputValue] = useState("");
-  const [inputType, setInputType] = useState("string");
-  const { setNodes } = useReactFlow(); // ✅ we use ReactFlow to update node data
-
-  useEffect(() => {
-    setNodes((prev) =>
-      prev.map((node) =>
-        node.id === id
-          ? { ...node, data: { ...node.data, inputValue, inputType } }
-          : node
-      )
-    );
-  }, [inputValue, inputType, id, setNodes]); // ✅ Update when changed
-
   return (
     <div
       className={`bg-gray-800 rounded-xl shadow-lg border p-5 min-w-[280px] transition-shadow hover:shadow-xl ${
@@ -51,43 +37,11 @@ export function TextNode({
         className="!w-3 !h-3 !border-2 !bg-blue-500"
       />
 
-      <div className="flex items-center gap-2 mb-5">
+      <div className="flex items-center gap-2">
         <div className="p-1.5 bg-emerald-700 rounded-md">
           <ArrowRight className="w-4 h-4 text-emerald-300" />
         </div>
         <span className="font-medium text-sm text-white">Text Node</span>
-      </div>
-
-      <div className="space-y-5">
-        <div className="space-y-1.5">
-          <label className="block text-xs font-medium text-gray-300 mb-1">
-            Input Value
-          </label>
-          <input
-            type="text"
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
-            placeholder="Enter input value..."
-            className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm text-white focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:border-transparent"
-          />
-        </div>
-
-        <div className="space-y-1.5">
-          <label className="block text-xs font-medium text-gray-300 mb-1">
-            Type
-          </label>
-          <select
-            value={inputType}
-            onChange={(e) => setInputType(e.target.value)}
-            className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm text-white focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:border-transparent cursor-pointer appearance-none"
-          >
-            <option value="string">String</option>
-            <option value="number">Number</option>
-            <option value="boolean">Boolean</option>
-            <option value="object">Object</option>
-            <option value="array">Array</option>
-          </select>
-        </div>
       </div>
 
       <Handle
@@ -286,56 +240,6 @@ export function OutputNode({
     input?: any;
   };
 }) {
-  const [outputFormat, setOutputFormat] = useState("raw");
-  const [fullValue, setFullValue] = useState(""); // full value
-  const [displayedValue, setDisplayedValue] = useState(""); // displayed value for streaming
-
-  useEffect(() => {
-    if (data?.input !== undefined) {
-      const formatted = formatValue(data.input, outputFormat);
-      setFullValue(formatted);
-      setDisplayedValue(""); // reset before streaming starts
-    }
-  }, [data?.input, outputFormat]);
-
-  useEffect(() => {
-    if (fullValue) {
-      let index = 0;
-
-      const interval = setInterval(() => {
-        index++;
-        setDisplayedValue(fullValue.slice(0, index));
-
-        if (index >= fullValue.length) {
-          clearInterval(interval);
-        }
-      }, 25); // speed of streaming (smaller = faster)
-
-      return () => clearInterval(interval);
-    }
-  }, [fullValue]);
-
-  const formatValue = (input: any, format: string) => {
-    if (input === undefined || input === null) return "";
-
-    try {
-      switch (format) {
-        case "json":
-          return JSON.stringify(input, null, 2);
-        case "string":
-          return String(input);
-        case "number":
-          return Number(input).toString();
-        case "raw":
-        default:
-          return String(input);
-      }
-    } catch (error) {
-      console.error("[OutputNode] Error formatting value:", error);
-      return "⚠️ Error formatting value";
-    }
-  };
-
   return (
     <div
       className={`bg-gray-800 rounded-xl shadow-lg border p-5 min-w-[280px] transition-shadow hover:shadow-xl ${
@@ -348,42 +252,11 @@ export function OutputNode({
         className="!bg-pink-500 !w-3 !h-3 !border-2"
       />
 
-      <div className="flex items-center gap-3 mb-5">
+      <div className="flex items-center gap-3">
         <div className="p-2.5 bg-gradient-to-br from-pink-600 to-pink-700 rounded-lg">
           <ArrowLeft className="w-5 h-5 text-white" />
         </div>
         <span className="font-semibold text-white">Output Node</span>
-      </div>
-
-      <div className="space-y-4">
-        <div className="space-y-2">
-          <label className="text-sm font-medium text-gray-300">
-            Output Value
-          </label>
-          <div className="p-4 bg-gray-700/50 border border-gray-600 rounded-lg min-h-[60px] text-sm text-gray-200 font-medium whitespace-pre-wrap break-words">
-            {displayedValue !== "" ? (
-              displayedValue
-            ) : (
-              <div className="text-gray-400">Waiting for input...</div>
-            )}
-          </div>
-        </div>
-
-        <div className="space-y-2">
-          <label className="text-sm font-medium text-gray-300">
-            Output Format
-          </label>
-          <select
-            value={outputFormat}
-            onChange={(e) => setOutputFormat(e.target.value)}
-            className="w-full px-4 py-2.5 bg-gray-700/50 border border-gray-600 rounded-lg text-sm text-white transition-colors focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 hover:border-gray-500 cursor-pointer"
-          >
-            <option value="raw">Raw Value</option>
-            <option value="json">JSON</option>
-            <option value="string">String</option>
-            <option value="number">Number</option>
-          </select>
-        </div>
       </div>
     </div>
   );

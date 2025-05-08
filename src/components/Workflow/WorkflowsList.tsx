@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
 import { supabase } from "../../../supabaseClient";
-import FlowsCard from "./FlowsCArd"; // تأكد من المسار الصحيح
+import FlowsCard from "./FlowsCArd";
 import { List } from "lucide-react";
 import EmptyState from "@/components/EmptyState";
+import { useNavigate } from "react-router-dom";
+import { Button } from "@/components/ui/button";
 
 interface Workflow {
   id: string;
@@ -15,9 +17,35 @@ interface Workflow {
 
 export default function WorkflowsList() {
   const [workflows, setWorkflows] = useState<Workflow[]>([]);
+  const [visibleCount, setVisibleCount] = useState(5);
   const [loading, setLoading] = useState(true);
   const [session, setSession] = useState<any>(null);
   const [userProfile, setUserProfile] = useState<any>(null);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!session?.user?.id) return;
+
+    const fetchUserWorkflows = async () => {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from("workflows")
+        .select("*")
+        .eq("user_id", session.user.id)
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        console.error("Error fetching workflows:", error);
+      } else {
+        setWorkflows(data || []);
+      }
+
+      setLoading(false);
+    };
+
+    fetchUserWorkflows();
+  }, [session]);
+
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
@@ -64,30 +92,6 @@ export default function WorkflowsList() {
     }
   };
 
-  useEffect(() => {
-    if (!session?.user?.id) return;
-
-    const fetchUserWorkflows = async () => {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from("workflows")
-        .select("*")
-        .eq("user_id", session.user.id)
-        .order("created_at", { ascending: false })
-        .limit(5); 
-
-      if (error) {
-        console.error("Error fetching workflows:", error);
-      } else {
-        setWorkflows(data || []);
-      }
-
-      setLoading(false);
-    };
-
-    fetchUserWorkflows();
-  }, [session]);
-
   if (loading) return <p className="text-muted">Loading workflows...</p>;
 
   return (
@@ -99,15 +103,32 @@ export default function WorkflowsList() {
           icon={<List className="h-6 w-6 text-primary" />}
         />
       ) : (
-        workflows.map((flow) => (
-          <FlowsCard
-            key={flow.id}
-            name={flow.flow_name}
-            created_at={flow.created_at}
-            updated_at={flow.updated_at}
-            status={flow.status}
-          />
-        ))
+        <>
+          {workflows.slice(0, visibleCount).map((flow) => (
+            <div
+              key={flow.id}
+              onClick={() => navigate(`/workflows/${flow.id}`)} 
+              className="cursor-pointer"
+            >
+              <FlowsCard
+                name={flow.flow_name}
+                created_at={flow.created_at}
+                updated_at={flow.updated_at}
+                status={flow.status}
+              />
+            </div>
+          ))}
+
+          {visibleCount < workflows.length && (
+            <Button
+              onClick={() => setVisibleCount((prev) => prev + 5)}
+              className="mx-auto w-fit"
+              variant="outline"
+            >
+              Show More
+            </Button>
+          )}
+        </>
       )}
     </div>
   );
