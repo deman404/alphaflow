@@ -1,6 +1,5 @@
-
-import React, { useState, useCallback, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import React, { useState, useCallback, useEffect } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import {
   ReactFlow,
   Background,
@@ -13,18 +12,18 @@ import {
   Connection,
   Edge,
   Node,
-} from '@xyflow/react';
-import '@xyflow/react/dist/style.css';
-import { toast } from 'sonner';
-import { ArrowLeft, Save, Workflow, Cog, Search, Plus } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+} from "@xyflow/react";
+import "@xyflow/react/dist/style.css";
+import { toast } from "sonner";
+import { ArrowLeft, Save, Workflow, Cog, Search, Plus } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import {
   Sheet,
   SheetContent,
   SheetDescription,
   SheetHeader,
   SheetTitle,
-} from '@/components/ui/sheet';
+} from "@/components/ui/sheet";
 import {
   Sidebar,
   SidebarContent,
@@ -36,47 +35,80 @@ import {
   SidebarMenuButton,
   SidebarGroup,
   SidebarGroupLabel,
-} from '@/components/ui/sidebar';
-import { Input } from '@/components/ui/input';
-import { Separator } from '@/components/ui/separator';
-import {supabase} from '../../supabaseClient';
+} from "@/components/ui/sidebar";
+import { Input } from "@/components/ui/input";
+import { Separator } from "@/components/ui/separator";
+import { supabase } from "../../supabaseClient";
 import { nodeTypes } from "@/components/nodes/index";
 
 // Node types
-// Initial empty flow
 const initialNodes: Node[] = [];
 const initialEdges: Edge[] = [];
 
 const WorkflowEditor: React.FC = () => {
-  const navigate = useNavigate();
-  const { workflowId } = useParams();
-  const [user ,setUser] = useState<any>(null);
+  const [user, setUser] = useState<any>(null);
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
   const [selectedNode, setSelectedNode] = useState<Node | null>(null);
   const [isPropertiesOpen, setIsPropertiesOpen] = useState(false);
   const [workflowName, setWorkflowName] = useState("New Workflow");
+  const [session, setSession] = useState<any>(null);
+  const [userProfile, setUserProfile] = useState<any>(null);
+  const { workflowId } = useParams<{ workflowId: string }>();
+  const [workflowData, setWorkflowData] = useState<any>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [previousWorkflowData, setPreviousWorkflowData] = useState<any>(null);
 
-  // Load template if available
+  const navigate = useNavigate();
+
   useEffect(() => {
-    const templateData = sessionStorage.getItem('selectedTemplate');
-    
-    if (templateData) {
-      try {
-        const template = JSON.parse(templateData);
-        if (template.nodes && template.edges) {
-          setNodes(template.nodes);
-          setEdges(template.edges);
-          setWorkflowName(template.name || "New Workflow");
-          toast.success(`Loaded '${template.name}' template`);
-        }
-        // Clear the template from session storage to avoid loading it again on refresh
-        sessionStorage.removeItem('selectedTemplate');
-      } catch (error) {
-        console.error("Error loading template:", error);
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      if (session?.user?.id) {
+        fetchProfileOrFallback(session);
       }
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+      if (session?.user?.id) {
+        fetchProfileOrFallback(session);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const fetchProfileOrFallback = async (session: any) => {
+    const userId = session.user.id;
+
+    const { data, error } = await supabase
+      .from("workflows")
+      .select("*")
+      .eq("user_id", userId)
+      .single();
+
+    if (error || !data) {
+      console.error("Profile not found, falling back to session data:", error);
+
+      // Fallback to session data
+      const fallbackProfile = {
+        user_id: userId,
+        name: session.user.user_metadata?.name,
+        email: session.user.user_metadata?.email,
+        picture: session.user.user_metadata?.picture,
+      };
+      setUserProfile(fallbackProfile);
+    } else {
+      console.log("Profile loaded from DB:", data);
+      setUserProfile(data);
     }
-  }, [setNodes, setEdges]);
+  };
+
+  console.log("Current workflowId:", workflowId);
+  console.log("Existing workflow data:", workflowData);
 
   // Handle connections between nodes
   const onConnect = useCallback(
@@ -91,23 +123,21 @@ const WorkflowEditor: React.FC = () => {
   }, []);
 
   // Handle saving the workflow
-  const handleSave = () => {
-    // In a real app, you would save to the backend here
-    toast.success("Workflow saved successfully!");
-  };
 
   // Handle adding new nodes when dragged from the sidebar
   const onDragStart = (event: React.DragEvent, nodeType: string) => {
-    event.dataTransfer.setData('application/reactflow', nodeType);
-    event.dataTransfer.effectAllowed = 'move';
+    event.dataTransfer.setData("application/reactflow", nodeType);
+    event.dataTransfer.effectAllowed = "move";
   };
 
   const onDrop = useCallback(
     (event: React.DragEvent) => {
       event.preventDefault();
 
-      const reactFlowBounds = document.querySelector('.react-flow')?.getBoundingClientRect();
-      const type = event.dataTransfer.getData('application/reactflow');
+      const reactFlowBounds = document
+        .querySelector(".react-flow")
+        ?.getBoundingClientRect();
+      const type = event.dataTransfer.getData("application/reactflow");
 
       if (!type || !reactFlowBounds) {
         return;
@@ -133,37 +163,206 @@ const WorkflowEditor: React.FC = () => {
 
   const onDragOver = useCallback((event: React.DragEvent) => {
     event.preventDefault();
-    event.dataTransfer.dropEffect = 'move';
+    event.dataTransfer.dropEffect = "move";
   }, []);
 
   // Node types for sidebar
   const nodeCategories = [
     {
-      name: 'Triggers',
+      name: "Triggers",
       items: [
-        { type: 'text', label: 'Email Trigger' },
-        { type: 'outputext', label: 'Schedule Trigger' },
-        { type: 'trigger_webhook', label: 'Webhook Trigger' },
+        { type: "text", label: "Email Trigger" },
+        { type: "outputext", label: "Schedule Trigger" },
+        { type: "trigger_webhook", label: "Webhook Trigger" },
       ],
     },
     {
-      name: 'Actions',
+      name: "Actions",
       items: [
-        { type: 'action_email', label: 'Send Email' },
-        { type: 'action_notification', label: 'Send Notification' },
-        { type: 'action_database', label: 'Update Database' },
+        { type: "action_email", label: "Send Email" },
+        { type: "action_notification", label: "Send Notification" },
+        { type: "action_database", label: "Update Database" },
       ],
     },
     {
-      name: 'Logic',
+      name: "Logic",
       items: [
-        { type: 'if', label: 'Condition' },
-        { type: 'logic_switch', label: 'Switch' },
-        { type: 'logic_loop', label: 'Loop' },
+        { type: "if", label: "Condition" },
+        { type: "logic_switch", label: "Switch" },
+        { type: "logic_loop", label: "Loop" },
       ],
     },
   ];
 
+  // Load workflow data when component mounts or workflowId changes
+  useEffect(() => {
+    const loadWorkflow = async () => {
+      if (!workflowId || !session?.user?.id) {
+        console.log("No workflowId or session - creating new workflow");
+        return;
+      }
+
+      try {
+        const { data, error } = await supabase
+          .from("workflows")
+          .select("*")
+          .eq("id", workflowId)
+          .eq("user_id", session.user.id)
+          .single();
+
+        if (error) throw error;
+
+        if (data) {
+          console.log("Loaded workflow data:", data);
+          setWorkflowData(data);
+          setWorkflowName(data.flow_name);
+          if (data.data) {
+            const parsedData =
+              typeof data.data === "string" ? JSON.parse(data.data) : data.data;
+            setNodes(parsedData.nodes || []);
+            setEdges(parsedData.edges || []);
+          }
+        }
+      } catch (error) {
+        console.error("Error loading workflow:", error);
+        toast.error("Failed to load workflow");
+      }
+    };
+
+    loadWorkflow();
+  }, [workflowId, session?.user?.id]);
+
+  // 1. Add deep equality check utility (at top of file)
+  const deepEqual = (a: any, b: any): boolean =>
+    JSON.stringify(a) === JSON.stringify(b);
+
+  // 2. Enhanced save handler
+
+  const sanitizeNode = (node) => ({
+    id: node.id,
+    type: node.type,
+    position: { x: node.position.x, y: node.position.y },
+    data: node.data ? JSON.parse(JSON.stringify(node.data)) : {},
+  });
+
+  const sanitizeEdge = (edge) => ({
+    id: edge.id,
+    source: edge.source,
+    target: edge.target,
+    type: edge.type || "default",
+    ...(edge.sourceHandle && { sourceHandle: edge.sourceHandle }),
+    ...(edge.targetHandle && { targetHandle: edge.targetHandle }),
+  });
+
+  const handleSave = async () => {
+    if (!workflowName || !session?.user?.id || isSaving) return;
+
+    setIsSaving(true);
+    const startTime = Date.now();
+
+    try {
+      // 1. Prepare and log payload
+      const payload = {
+        flow_name: workflowName,
+        data: {
+          nodes: nodes.map(sanitizeNode),
+          edges: edges.map(sanitizeEdge),
+        },
+        updated_at: new Date().toISOString(),
+      };
+
+      console.debug("Saving payload:", {
+        ...payload,
+        data: {
+          nodeCount: payload.data.nodes.length,
+          edgeCount: payload.data.edges.length,
+        },
+      });
+
+      // 2. Direct update with error handling
+      const { error } = await supabase
+        .from("workflows")
+        .update(payload)
+        .eq("id", workflowId)
+        .eq("user_id", session.user.id);
+
+      if (error) throw error;
+
+      // 3. Enhanced verification with timeout
+      const verifyUpdate = async (attempt = 0): Promise<boolean> => {
+        const { data: updated } = await supabase
+          .from("workflows")
+          .select("data, updated_at")
+          .eq("id", workflowId)
+          .single();
+
+        if (!updated) return false;
+
+        // Compare only essential properties
+        const nodesMatch =
+          updated.data.nodes?.length === payload.data.nodes.length;
+        const edgesMatch =
+          updated.data.edges?.length === payload.data.edges.length;
+        const recentUpdate =
+          new Date(updated.updated_at) > new Date(startTime - 5000);
+
+        if (nodesMatch && edgesMatch && recentUpdate) {
+          return true;
+        }
+
+        if (attempt < 2) {
+          await new Promise((resolve) => setTimeout(resolve, 300));
+          return verifyUpdate(attempt + 1);
+        }
+
+        console.warn("Verification mismatch:", {
+          expectedNodes: payload.data.nodes.length,
+          actualNodes: updated.data.nodes?.length,
+          expectedEdges: payload.data.edges.length,
+          actualEdges: updated.data.edges?.length,
+          updateTime: updated.updated_at,
+          startTime: new Date(startTime).toISOString(),
+        });
+        return false;
+      };
+
+      const verified = await verifyUpdate();
+      if (!verified) throw new Error("Data verification failed");
+
+      toast.success("Workflow saved successfully!");
+    } catch (error) {
+      console.error("Save operation failed:", {
+        error: error.message,
+        workflowId,
+        userId: session.user.id,
+        nodeCount: nodes.length,
+        edgeCount: edges.length,
+        timestamp: new Date().toISOString(),
+      });
+      toast.error(`Save failed: ${error.message}`);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // 3. Add this debug effect
+  // Add to your component
+  useEffect(() => {
+    const interval = setInterval(async () => {
+      const { data } = await supabase
+        .from("workflows")
+        .select("data, updated_at")
+        .eq("id", workflowId)
+        .single();
+      console.log("Current DB state:", {
+        nodeCount: data?.data?.nodes?.length,
+        edgeCount: data?.data?.edges?.length,
+        updatedAt: data?.updated_at,
+      });
+    }, 10000);
+
+    return () => clearInterval(interval);
+  }, [workflowId]);
   return (
     <div className="h-screen w-full flex">
       <SidebarProvider defaultOpen={true}>
@@ -182,7 +381,7 @@ const WorkflowEditor: React.FC = () => {
                 className="mb-4"
               />
             </div>
-            
+
             {nodeCategories.map((category) => (
               <SidebarGroup key={category.name}>
                 <SidebarGroupLabel>{category.name}</SidebarGroupLabel>
@@ -214,34 +413,57 @@ const WorkflowEditor: React.FC = () => {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => navigate('/dashboard')}
+                onClick={() => navigate("/dashboard")}
               >
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 Back
               </Button>
               <div className="flex items-center ml-4">
                 <Workflow className="h-5 w-5 mr-2 text-primary" />
-                <span className="font-medium">
-                  {workflowName}
-                </span>
+                <span className="font-medium">{workflowData?.flow_name}</span>
               </div>
             </div>
-            
+
             <div className="flex items-center gap-2">
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={() => navigate('/workflow-templates')}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigate("/workflow-templates")}
               >
                 Browse Templates
               </Button>
-              <Button variant="default" size="sm" onClick={handleSave}>
-                <Save className="mr-2 h-4 w-4" />
-                Save Workflow
+              <Button
+                onClick={handleSave}
+                disabled={!workflowName || isSaving}
+                className="flex items-center gap-2"
+              >
+                {isSaving ? (
+                  <>
+                    <svg
+                      className="animate-spin h-4 w-4 mr-2"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                        fill="none"
+                      />
+                    </svg>
+                    Saving...
+                  </>
+                ) : (
+                  <>
+                    <Save className="mr-2 h-4 w-4" />
+                    Save Workflow
+                  </>
+                )}
               </Button>
             </div>
           </div>
-          
+
           {/* ReactFlow Canvas */}
           <div className="flex-1 h-full">
             <ReactFlow
@@ -259,52 +481,17 @@ const WorkflowEditor: React.FC = () => {
               <Background />
               <Controls />
               <MiniMap />
-              <Panel position="bottom-right" className="bg-background p-2 rounded-md shadow">
+              <Panel
+                position="bottom-right"
+                className="bg-background p-2 rounded-md shadow"
+              >
                 <div className="text-xs text-muted-foreground">
-                  {nodes.length} nodes · {edges.length} connections
+                  WorkFlow ID: {workflowId}
                 </div>
               </Panel>
             </ReactFlow>
           </div>
         </div>
-
-        {/* Properties Panel */}
-        <Sheet open={isPropertiesOpen} onOpenChange={setIsPropertiesOpen}>
-          <SheetContent side="right" className="w-[350px] sm:w-[400px]">
-            <SheetHeader>
-              <SheetTitle>Node Properties</SheetTitle>
-              <SheetDescription>
-                Configure the selected node's parameters
-              </SheetDescription>
-            </SheetHeader>
-            {selectedNode ? (
-              <div className="mt-6 space-y-4">
-                <div>
-                  <h3 className="text-sm font-medium">ID</h3>
-                  <p className="text-sm text-muted-foreground">{selectedNode.id}</p>
-                </div>
-                <div>
-                  <h3 className="text-sm font-medium">Type</h3>
-                  <p className="text-sm text-muted-foreground">{selectedNode.type}</p>
-                </div>
-                <Separator className="my-4" />
-                <div>
-                  <h3 className="text-sm font-medium">Parameters</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Parameters for this node would be displayed here.
-                  </p>
-                </div>
-              </div>
-            ) : (
-              <div className="flex flex-col items-center justify-center h-40">
-                <Cog className="h-10 w-10 text-muted-foreground opacity-20" />
-                <p className="mt-2 text-sm text-muted-foreground">
-                  Select a node to view its properties
-                </p>
-              </div>
-            )}
-          </SheetContent>
-        </Sheet>
       </SidebarProvider>
     </div>
   );

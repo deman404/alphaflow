@@ -50,7 +50,7 @@ const App = () => (
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="/workflow" element={<Workflow />} />
-          <Route path="/workflows/:id" element={<WorkflowEditor />} />
+          <Route path="/workflows/:workflowId" element={<WorkflowEditor />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
