@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
   ReactFlow,
@@ -16,7 +16,6 @@ import {
 import "@xyflow/react/dist/style.css";
 import { nodeTypes } from "@/components/nodes/index";
 
-// Node types
 
 // Initial empty flow
 const initialNodes: Node[] = [];
@@ -25,20 +24,24 @@ const initialEdges: Edge[] = [];
 interface ReactFlowCanvasProps {
   onNodeClick?: (node: Node) => void;
   onSelectionChange?: (nodes: Node[]) => void;
+  onNodesUpdate?: (nodes: Node[]) => void;
 }
 
 const ReactFlowCanvas: React.FC<ReactFlowCanvasProps> = ({
   onNodeClick,
   onSelectionChange,
+  onNodesUpdate,
 }) => {
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
   const [selectedNode, setSelectedNode] = useState<Node | null>(null);
   const [isPropertiesOpen, setIsPropertiesOpen] = useState(false);
 
+  
   // Handle connections between nodes
   const onConnect = useCallback(
-    (params: Connection) => setEdges((eds) => addEdge(params, eds)),
+    (params: Connection) =>
+      setEdges((eds) => addEdge({ ...params, type: "smoothstep" }, eds)),
     [setEdges]
   );
 
@@ -82,6 +85,10 @@ const ReactFlowCanvas: React.FC<ReactFlowCanvasProps> = ({
 
   // Node types for sidebar
 
+  useEffect(() => {
+    onNodesUpdate?.(nodes);
+  }, [nodes]);
+
   return (
     <div className="flex-1 h-full">
       <ReactFlow
@@ -95,18 +102,18 @@ const ReactFlowCanvas: React.FC<ReactFlowCanvasProps> = ({
         onDragOver={onDragOver}
         fitView
         onNodeClick={(_, node) => {
-          onNodeClick?.(node); // أرسل النود للـ parent
+          onNodeClick?.(node);
         }}
         onSelectionChange={(params) => {
           const selectedNodes = params.nodes || [];
-          onSelectionChange?.(selectedNodes); // أرسل المصفوفة
+          onSelectionChange?.(selectedNodes);
         }}
       >
         <Background className="bg-[#0e0e11]" />
         <Controls className=" text-black" />
         <MiniMap className="bg-black" />
         <Panel
-          position="bottom-right"
+          position="top-right"
           className="bg-background p-2 rounded-md shadow"
         >
           <div className="text-xs text-muted-foreground">

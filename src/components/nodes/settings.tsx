@@ -14,20 +14,20 @@ import {
 import { useReactFlow } from "@xyflow/react";
 import React from "react";
 
-//text
 export function TextNode({
   id,
   data,
 }: {
   id: string;
   data: {
-    highlight: any;
-    label: string;
+    highlight?: boolean;
+    label?: string;
+    value?: string; // Add your editable parameters here
   };
 }) {
   return (
     <div
-      className={`bg-gray-800 rounded-xl shadow-lg border p-5 min-w-[280px] transition-shadow hover:shadow-xl ${
+      className={`bg-gray-800 rounded-xl shadow-lg border p-5 min-w-full transition-shadow hover:shadow-xl ${
         data.highlight ? "ring-2 ring-green-400" : ""
       }`}
     >
@@ -41,7 +41,9 @@ export function TextNode({
         <div className="p-1.5 bg-emerald-700 rounded-md">
           <ArrowRight className="w-4 h-4 text-emerald-300" />
         </div>
-        <span className="font-medium text-sm text-white">Text Node</span>
+        <span className="font-medium text-sm text-white">
+          {data.label || "Text Node"}
+        </span>
       </div>
 
       <Handle
@@ -118,7 +120,7 @@ export function DefaultNode({
 
   return (
     <div
-      className={`bg-white rounded-xl shadow-lg border p-5 min-w-[360px] transition-shadow hover:shadow-xl ${
+      className={`bg-white rounded-xl shadow-lg border p-5 min-w-full transition-shadow hover:shadow-xl ${
         data.highlight ? "ring-2 ring-green-400" : ""
       }`}
     >
@@ -236,13 +238,14 @@ export function OutputNode({
 }: {
   id: string;
   data: {
-    highlight: any;
-    input?: any;
+    highlight?: boolean;
+    label?: string;
+    value?: string;
   };
 }) {
   return (
     <div
-      className={`bg-gray-800 rounded-xl shadow-lg border p-5 min-w-[280px] transition-shadow hover:shadow-xl ${
+      className={`bg-gray-800 rounded-xl shadow-lg border p-5 min-w-full transition-shadow hover:shadow-xl ${
         data.highlight ? "ring-2 ring-green-400" : ""
       }`}
     >

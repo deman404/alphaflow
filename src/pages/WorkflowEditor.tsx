@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { Edge, Node } from "@xyflow/react";
+import { Edge, Node, useEdgesState, useNodesState } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import { toast } from "sonner";
 import { ArrowLeft, Save, Workflow, Cog, Search, Plus } from "lucide-react";
@@ -31,10 +31,19 @@ const WorkflowEditor: React.FC = () => {
   const [isPropertiesOpen, setIsPropertiesOpen] = useState(false);
   const [session, setSession] = useState(null);
   const [userProfile, setUserProfile] = useState(null);
+  const [nodesData, setNodesData] = useState<Node[]>([]);
+  const [nodes, setNodes, onNodesChange] = useNodesState([]);
+  const [edges, setEdges, onEdgesChange] = useEdgesState([]);
+
+  const handleNodesUpdate = (updatedNodes: Node[]) => {
+    setNodesData(updatedNodes);
+  };
+
   // Handle saving the workflow
-  const handleSave = () => {
-    // In a real app, you would save to the backend here
-    toast.success("Workflow saved successfully!");
+  const onUpdateNode = (updatedNode: Node) => {
+    setNodes((nds) =>
+      nds.map((node) => (node.id === updatedNode.id ? updatedNode : node))
+    );
   };
 
   // Handle adding new nodes when dragged from the sidebar
@@ -64,7 +73,7 @@ const WorkflowEditor: React.FC = () => {
     {
       name: "Logic",
       items: [
-        { type: "logic_condition", label: "Condition" },
+        { type: "if", label: "Condition" },
         { type: "logic_switch", label: "Switch" },
         { type: "logic_loop", label: "Loop" },
       ],
@@ -124,7 +133,6 @@ const WorkflowEditor: React.FC = () => {
           <SidebarHeader className="border-b">
             <div className="px-4 py-2 flex justify-between items-center">
               <h2 className="text-lg font-semibold">Workflow Nodes</h2>
-              <SidebarTrigger />
             </div>
           </SidebarHeader>
           <SidebarContent>
@@ -175,7 +183,7 @@ const WorkflowEditor: React.FC = () => {
             </div>
 
             <div className="flex items-center">
-              <Button variant="default" size="sm" onClick={handleSave}>
+              <Button variant="default" size="sm">
                 <Save className="mr-2 h-4 w-4" />
                 Save Workflow
               </Button>
@@ -194,6 +202,7 @@ const WorkflowEditor: React.FC = () => {
                 setIsPropertiesOpen(false);
               }
             }}
+            onNodesUpdate={handleNodesUpdate}
           />
         </div>
 
@@ -203,6 +212,7 @@ const WorkflowEditor: React.FC = () => {
           onOpenChange={setIsPropertiesOpen}
           selectedNode={selectedNode}
           setSelectedNode={setSelectedNode}
+          onUpdateNode={onUpdateNode}
         />
       </SidebarProvider>
     </div>
