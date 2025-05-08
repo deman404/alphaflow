@@ -91,8 +91,6 @@ const WorkflowEditor: React.FC = () => {
       .single();
 
     if (error || !data) {
-      console.error("Profile not found, falling back to session data:", error);
-
       // Fallback to session data
       const fallbackProfile = {
         user_id: userId,
@@ -106,9 +104,6 @@ const WorkflowEditor: React.FC = () => {
       setUserProfile(data);
     }
   };
-
-  console.log("Current workflowId:", workflowId);
-  console.log("Existing workflow data:", workflowData);
 
   // Handle connections between nodes
   const onConnect = useCallback(
@@ -198,7 +193,6 @@ const WorkflowEditor: React.FC = () => {
   useEffect(() => {
     const loadWorkflow = async () => {
       if (!workflowId || !session?.user?.id) {
-        console.log("No workflowId or session - creating new workflow");
         return;
       }
 
@@ -213,7 +207,6 @@ const WorkflowEditor: React.FC = () => {
         if (error) throw error;
 
         if (data) {
-          console.log("Loaded workflow data:", data);
           setWorkflowData(data);
           setWorkflowName(data.flow_name);
           if (data.data) {
@@ -224,19 +217,12 @@ const WorkflowEditor: React.FC = () => {
           }
         }
       } catch (error) {
-        console.error("Error loading workflow:", error);
         toast.error("Failed to load workflow");
       }
     };
 
     loadWorkflow();
   }, [workflowId, session?.user?.id]);
-
-  // 1. Add deep equality check utility (at top of file)
-  const deepEqual = (a: any, b: any): boolean =>
-    JSON.stringify(a) === JSON.stringify(b);
-
-  // 2. Enhanced save handler
 
   const sanitizeNode = (node) => ({
     id: node.id,
@@ -270,14 +256,6 @@ const WorkflowEditor: React.FC = () => {
         },
         updated_at: new Date().toISOString(),
       };
-
-      console.debug("Saving payload:", {
-        ...payload,
-        data: {
-          nodeCount: payload.data.nodes.length,
-          edgeCount: payload.data.edges.length,
-        },
-      });
 
       // 2. Direct update with error handling
       const { error } = await supabase
@@ -315,14 +293,6 @@ const WorkflowEditor: React.FC = () => {
           return verifyUpdate(attempt + 1);
         }
 
-        console.warn("Verification mismatch:", {
-          expectedNodes: payload.data.nodes.length,
-          actualNodes: updated.data.nodes?.length,
-          expectedEdges: payload.data.edges.length,
-          actualEdges: updated.data.edges?.length,
-          updateTime: updated.updated_at,
-          startTime: new Date(startTime).toISOString(),
-        });
         return false;
       };
 
@@ -345,8 +315,6 @@ const WorkflowEditor: React.FC = () => {
     }
   };
 
-  // 3. Add this debug effect
-  // Add to your component
   useEffect(() => {
     const interval = setInterval(async () => {
       const { data } = await supabase
@@ -354,11 +322,6 @@ const WorkflowEditor: React.FC = () => {
         .select("data, updated_at")
         .eq("id", workflowId)
         .single();
-      console.log("Current DB state:", {
-        nodeCount: data?.data?.nodes?.length,
-        edgeCount: data?.data?.edges?.length,
-        updatedAt: data?.updated_at,
-      });
     }, 10000);
 
     return () => clearInterval(interval);
