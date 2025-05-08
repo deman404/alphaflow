@@ -40,7 +40,14 @@ export default function Properties({
   const handleChange = (key: string, value: string) => {
     setLocalData((prev: any) => ({ ...prev, [key]: value }));
   };
-  const handleSave = () => {};
+  const handleSave = () => {
+    if (selectedNode) {
+      const updatedNode = { ...selectedNode, data: { ...localData } };
+      onUpdateNode(updatedNode);
+      setSelectedNode(updatedNode);
+      toast.success("Node parameters saved successfully!");
+    }
+  };
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>

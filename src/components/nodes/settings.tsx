@@ -1,5 +1,3 @@
-"use client";
-
 import { useState, useEffect } from "react";
 import { Handle, Position } from "@xyflow/react";
 import {
@@ -22,7 +20,7 @@ export function TextNode({
   data: {
     highlight?: boolean;
     label?: string;
-    value?: string; // Add your editable parameters here
+    value?: string;
   };
 }) {
   return (
@@ -44,6 +42,7 @@ export function TextNode({
         <span className="font-medium text-sm text-white">
           {data.label || "Text Node"}
         </span>
+        <p className="text-sm text-white mt-2">{data.value || "Text Value"}</p>
       </div>
 
       <Handle
