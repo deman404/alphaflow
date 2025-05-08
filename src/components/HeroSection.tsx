@@ -17,7 +17,7 @@ import {
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import { TextNode, OutputNode } from "./nodes/settings";
-
+import { Link } from "react-router-dom";
 const nodeTypes = {
   text: TextNode,
   out: OutputNode,
@@ -112,7 +112,9 @@ const HeroSection = () => {
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
               <Button size="lg" className="group">
-                Try for Free
+                <Link to="/SignUp" className="flex items-center">
+                  Try for Free
+                </Link>
                 <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
               </Button>
               <Button

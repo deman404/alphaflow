@@ -31,11 +31,7 @@ const EmptyState: React.FC<EmptyStateProps> = ({
         {description}
       </p>
       
-      {onAction && (
-        <Button onClick={onAction}>
-          {actionLabel}
-        </Button>
-      )}
+      
     </div>
   );
 };

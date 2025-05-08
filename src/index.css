@@ -2,7 +2,7 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
+@plugin "daisyui";
 @layer base {
   :root {
     --background: 240 10% 3.9%;

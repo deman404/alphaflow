@@ -21,7 +21,7 @@ import Privacy from "./pages/Privacy";
 import Terms from "./pages/Terms";
 import Dashboard from "./pages/Dashboard";
 import Settings from "./pages/Settings";
-
+import Workflow from "./pages/Workflow";
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -48,7 +48,7 @@ const App = () => (
           <Route path="/terms" element={<Terms />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/settings" element={<Settings />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+          <Route path="/workflow" element={<Workflow />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

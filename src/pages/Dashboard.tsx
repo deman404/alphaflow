@@ -31,7 +31,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "../../supabaseClient";
 
 //components
-import Sidebar from "@/components/Dashboard/Sidebar";
+import Sidebar from "@/components/settings/Sidebar";
 import Header from "@/components/Dashboard/Header";
 import StatsCards from "@/components/Dashboard/StatsCards";
 import RecentActivities from "@/components/Dashboard/RecentActivities";

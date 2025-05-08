@@ -41,25 +41,26 @@ const Sidebar: React.FC<SidebarProps> = ({
                 Alpha<span className="text-primary">flow</span>
               </Link>
             )}
-            {/* {sidebarCollapsed && (
-              <Link to="/" className="text-xl font-bold">
-                <span className="text-primary">A</span>
-              </Link>
-            )} */}
           </div>
           <button
             className="w-6 h-6 rounded bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors"
             onClick={onSidebarToggle}
           >
-            {sidebarCollapsed ? <ChevronRight className="text-primary" /> : <ChevronLeft />}
+            {sidebarCollapsed ? (
+              <ChevronRight className="text-primary" />
+            ) : (
+              <ChevronLeft />
+            )}
           </button>
         </div>
 
         <div className={`p-3 ${sidebarCollapsed ? "px-2" : ""}`}>
-          <Button className="w-full justify-start" variant="outline">
-            <Plus className="h-4 w-4 mr-2" />
-            {!sidebarCollapsed && "New Workflow"}
-          </Button>
+          <Link to="/workflow" className="w-full">
+            <Button className="w-full justify-start" variant="outline">
+              <Plus className="h-4 w-4 mr-2" />
+              {!sidebarCollapsed && "New Workflow"}
+            </Button>
+          </Link>
         </div>
 
         <div className="flex-1 px-3 py-2 overflow-y-auto">
@@ -72,11 +73,13 @@ const Sidebar: React.FC<SidebarProps> = ({
                 {!sidebarCollapsed && "Dashboard"}
               </Link>
             </Button>
-            <Button variant="ghost" className="w-full justify-start">
-              <FileText
-                className={`h-4 w-4 ${sidebarCollapsed ? "mr-0" : "mr-2"}`}
-              />
-              {!sidebarCollapsed && "Workflows"}
+            <Button variant="ghost" className="w-full justify-start" asChild>
+              <Link to="/workflow">
+                <FileText
+                  className={`h-4 w-4 ${sidebarCollapsed ? "mr-0" : "mr-2"}`}
+                />
+                {!sidebarCollapsed && "Workflows"}
+              </Link>
             </Button>
             <Button variant="ghost" className="w-full justify-start">
               <BarChart3
@@ -97,11 +100,7 @@ const Sidebar: React.FC<SidebarProps> = ({
               </div>
             )}
 
-            <Button
-              variant="secondary"
-              className="w-full justify-start"
-              asChild
-            >
+            <Button variant="ghost" className="w-full justify-start" asChild>
               <Link to="/settings">
                 <SettingsIcon
                   className={`h-4 w-4 ${sidebarCollapsed ? "mr-0" : "mr-2"}`}
@@ -109,7 +108,6 @@ const Sidebar: React.FC<SidebarProps> = ({
                 {!sidebarCollapsed && "Settings"}
               </Link>
             </Button>
-           
           </div>
         </div>
 
