@@ -77,8 +77,6 @@ const Workflow = () => {
       .single();
 
     if (error || !data) {
-      console.error("Profile not found, falling back to session data:", error);
-
       // Fallback to session data
       const fallbackProfile = {
         user_id: userId,
@@ -88,7 +86,6 @@ const Workflow = () => {
       };
       setUserProfile(fallbackProfile);
     } else {
-      console.log("Profile loaded from DB:", data);
       setUserProfile(data);
     }
   };
@@ -147,7 +144,6 @@ const Workflow = () => {
       setFlowStatus(""); // Reset status as well
       // navigate(`/workflows/${data.id}`);
     } catch (error) {
-      console.error("Error creating workflow:", error);
       toast.error("Error creating workflow");
     } finally {
       setIsClicked(false);
