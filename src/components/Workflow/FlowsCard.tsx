@@ -59,7 +59,16 @@ export default function FlowsCard({
           <p className="font-medium">{name}</p>
           <p className="text-sm text-muted-foreground">
             Created on {new Date(created_at).toLocaleDateString()} | Last
-            updated on {new Date(updated_at).toLocaleDateString()}
+            updated on{" "}
+            {new Date(updated_at).toLocaleDateString(undefined, {
+              year: "numeric",
+              month: "2-digit",
+              day: "2-digit",
+              hour: "2-digit",
+              minute: "2-digit",
+              second: "2-digit",
+              hour12: false,
+            })}
           </p>
         </div>
       </div>

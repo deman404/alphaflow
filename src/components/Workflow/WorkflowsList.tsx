@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "../../../supabaseClient";
-import FlowsCard from "./FlowsCArd";
+import FlowsCard from "./FlowsCard";
 import { List } from "lucide-react";
 import EmptyState from "@/components/EmptyState";
 import { useNavigate } from "react-router-dom";

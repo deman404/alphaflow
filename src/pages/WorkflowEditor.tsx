@@ -57,7 +57,8 @@ const WorkflowEditor: React.FC = () => {
   const { workflowId } = useParams<{ workflowId: string }>();
   const [workflowData, setWorkflowData] = useState<any>(null);
   const [isSaving, setIsSaving] = useState(false);
-  const [previousWorkflowData, setPreviousWorkflowData] = useState<any>(null);
+  const [canBack, setCanBack] = useState(false);
+  const [backAlertOpen, setBackAlertOpen] = useState(false);
 
   const navigate = useNavigate();
 
@@ -116,8 +117,6 @@ const WorkflowEditor: React.FC = () => {
     setSelectedNode(node);
     setIsPropertiesOpen(true);
   }, []);
-
-  // Handle saving the workflow
 
   // Handle adding new nodes when dragged from the sidebar
   const onDragStart = (event: React.DragEvent, nodeType: string) => {
@@ -298,17 +297,10 @@ const WorkflowEditor: React.FC = () => {
 
       const verified = await verifyUpdate();
       if (!verified) throw new Error("Data verification failed");
+      setCanBack(true);
 
       toast.success("Workflow saved successfully!");
     } catch (error) {
-      console.error("Save operation failed:", {
-        error: error.message,
-        workflowId,
-        userId: session.user.id,
-        nodeCount: nodes.length,
-        edgeCount: edges.length,
-        timestamp: new Date().toISOString(),
-      });
       toast.error(`Save failed: ${error.message}`);
     } finally {
       setIsSaving(false);
@@ -326,6 +318,22 @@ const WorkflowEditor: React.FC = () => {
 
     return () => clearInterval(interval);
   }, [workflowId]);
+
+  const handleBackClick = () => {
+    if (canBack) {
+      navigate("/workflow");
+    } else {
+      setBackAlertOpen(true);
+      toast("Workflow not saved", {
+        description: "You can go back to the workflow list without saving.",
+        duration: 5000,
+        action: {
+          label: "Dismiss",
+          onClick: () => navigate("/workflow"),
+        },
+      });
+    }
+  };
   return (
     <div className="h-screen w-full flex">
       <SidebarProvider defaultOpen={true}>
@@ -376,14 +384,32 @@ const WorkflowEditor: React.FC = () => {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => navigate("/dashboard")}
+                onClick={handleBackClick}
+                className="flex items-center gap-2"
               >
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 Back
               </Button>
               <div className="flex items-center ml-4">
                 <Workflow className="h-5 w-5 mr-2 text-primary" />
-                <span className="font-medium">{workflowData?.flow_name}</span>
+                <span className="font-medium flex items-center gap-2">
+                  {workflowData?.flow_name}{" "}
+                  <p className="text-sm text-muted-foreground">
+                    updated on{" "}
+                    {new Date(workflowData?.updated_at).toLocaleString(
+                      undefined,
+                      {
+                        year: "numeric",
+                        month: "2-digit",
+                        day: "2-digit",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                        second: "2-digit",
+                        hour12: false,
+                      }
+                    )}
+                  </p>
+                </span>
               </div>
             </div>
 
