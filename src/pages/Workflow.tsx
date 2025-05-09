@@ -30,177 +30,6 @@ import WorkflowsList from "@/components/Workflow/WorkflowsList";
 import Themplates from "@/components/Workflow/themplates";
 import themplates from "@/components/Workflow/themplates";
 
-const dataTemplates = [
-  {
-    id: "data-transformation",
-    name: "Data Transformation",
-    description: "Extract, transform, and load data between different systems.",
-    category: "data",
-    complexity: "Advanced",
-    nodes: [
-      {
-        id: "trigger_schedule",
-        type: "trigger_schedule",
-        position: { x: 100, y: 100 },
-        data: { label: "Schedule Trigger" },
-      },
-      {
-        id: "action_database1",
-        type: "action_database",
-        position: { x: 300, y: 50 },
-        data: { label: "Extract Data" },
-      },
-      {
-        id: "logic_condition",
-        type: "logic_condition",
-        position: { x: 300, y: 150 },
-        data: { label: "Transform Data" },
-      },
-      {
-        id: "action_database2",
-        type: "action_database",
-        position: { x: 500, y: 100 },
-        data: { label: "Load Data" },
-      },
-    ],
-    edges: [
-      { id: "e1-2", source: "trigger_schedule", target: "action_database1" },
-      { id: "e1-3", source: "trigger_schedule", target: "logic_condition" },
-      { id: "e2-4", source: "action_database1", target: "action_database2" },
-      { id: "e3-4", source: "logic_condition", target: "action_database2" },
-    ],
-  },
-  {
-    id: "email-notification",
-    name: "Email Notification Flow",
-    description: "Send automated emails when a condition is met.",
-    category: "communication",
-    complexity: "Beginner",
-    nodes: [
-      {
-        id: "trigger_event",
-        type: "trigger_event",
-        position: { x: 100, y: 100 },
-        data: { label: "Form Submitted" },
-      },
-      {
-        id: "logic_condition",
-        type: "logic_condition",
-        position: { x: 300, y: 100 },
-        data: { label: "Check Email Validity" },
-      },
-      {
-        id: "action_email",
-        type: "action_email",
-        position: { x: 500, y: 100 },
-        data: { label: "Send Email" },
-      },
-    ],
-    edges: [
-      { id: "e1-2", source: "trigger_event", target: "logic_condition" },
-      { id: "e2-3", source: "logic_condition", target: "action_email" },
-    ],
-  },
-  {
-    id: "slack-alert",
-    name: "Slack Alert System",
-    description: "Send a Slack message when a server fails.",
-    category: "monitoring",
-    complexity: "Intermediate",
-    nodes: [
-      {
-        id: "trigger_webhook",
-        type: "trigger_webhook",
-        position: { x: 100, y: 100 },
-        data: { label: "Server Failure" },
-      },
-      {
-        id: "action_slack",
-        type: "action_slack",
-        position: { x: 300, y: 100 },
-        data: { label: "Send Slack Message" },
-      },
-    ],
-    edges: [{ id: "e1-2", source: "trigger_webhook", target: "action_slack" }],
-  },
-  {
-    id: "api-pipeline",
-    name: "API Integration Pipeline",
-    description: "Trigger API calls and process responses sequentially.",
-    category: "integration",
-    complexity: "Advanced",
-    nodes: [
-      {
-        id: "trigger_manual",
-        type: "trigger_manual",
-        position: { x: 100, y: 100 },
-        data: { label: "Manual Trigger" },
-      },
-      {
-        id: "action_api1",
-        type: "action_api",
-        position: { x: 300, y: 80 },
-        data: { label: "Call API A" },
-      },
-      {
-        id: "logic_condition",
-        type: "logic_condition",
-        position: { x: 500, y: 100 },
-        data: { label: "Check Response" },
-      },
-      {
-        id: "action_api2",
-        type: "action_api",
-        position: { x: 700, y: 100 },
-        data: { label: "Call API B" },
-      },
-    ],
-    edges: [
-      { id: "e1-2", source: "trigger_manual", target: "action_api1" },
-      { id: "e2-3", source: "action_api1", target: "logic_condition" },
-      { id: "e3-4", source: "logic_condition", target: "action_api2" },
-    ],
-  },
-  {
-    id: "data-reporting",
-    name: "Data Reporting Workflow",
-    description: "Generate and email a report weekly.",
-    category: "reporting",
-    complexity: "Intermediate",
-    nodes: [
-      {
-        id: "trigger_schedule",
-        type: "trigger_schedule",
-        position: { x: 100, y: 100 },
-        data: { label: "Weekly Trigger" },
-      },
-      {
-        id: "action_query",
-        type: "action_database",
-        position: { x: 300, y: 100 },
-        data: { label: "Fetch Report Data" },
-      },
-      {
-        id: "action_generate_pdf",
-        type: "action_document",
-        position: { x: 500, y: 100 },
-        data: { label: "Generate PDF" },
-      },
-      {
-        id: "action_email",
-        type: "action_email",
-        position: { x: 700, y: 100 },
-        data: { label: "Send Report" },
-      },
-    ],
-    edges: [
-      { id: "e1-2", source: "trigger_schedule", target: "action_query" },
-      { id: "e2-3", source: "action_query", target: "action_generate_pdf" },
-      { id: "e3-4", source: "action_generate_pdf", target: "action_email" },
-    ],
-  },
-];
-
 const Workflow = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [activeTab, setActiveTab] = useState("profile");
@@ -209,6 +38,7 @@ const Workflow = () => {
   const [FlowName, setFlowName] = useState("");
   const [FlowStatus, setFlowStatus] = useState("private");
   const [isClicked, setIsClicked] = useState(false);
+  const [dataTemplates, setDataTemplates] = useState([]);
   const navigate = useNavigate();
 
   const toggleSidebar = () => {
@@ -433,7 +263,7 @@ const Workflow = () => {
 
           {/* Workflow Templates Section */}
 
-          {userProfile?.user_id != null ? (
+          {userProfile?.user_id != null && dataTemplates.length > 0 ? (
             <>
               <div className="flex justify-between items-center mb-6 mt-12">
                 <h2 className="text-xl font-semibold">Workflows Templates</h2>
@@ -473,8 +303,8 @@ const Workflow = () => {
                 </Button>
               </div>
               <EmptyState
-                title="You need to upgrade your plan"
-                description="Upgrade to a premium plan to access workflow templates."
+                title="no templates found"
+                description="No templates found. Create your own workflow or upgrade to a premium plan to access workflow templates."
                 icon={<CircleFadingArrowUp className="h-6 w-6 text-primary" />}
               />
             </>
