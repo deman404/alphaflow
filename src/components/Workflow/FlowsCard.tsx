@@ -1,30 +1,40 @@
-import React, { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
-  Settings as SettingsIcon,
-  EllipsisVertical,
-  Workflow,
+  ArrowRight,
+  FileText,
   Radio,
   RadioTower,
   Package,
   Eraser,
+  EllipsisVertical,
 } from "lucide-react";
-import { toast } from "sonner";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+  CardFooter,
+} from "@/components/ui/card";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuGroup,
   DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuPortal,
-  DropdownMenuSeparator,
-  DropdownMenuShortcut,
-  DropdownMenuSub,
-  DropdownMenuSubContent,
-  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-//interface for the flow card
+import React, { useMemo } from "react";
+import {
+  Facebook,
+  Github,
+  Chrome,
+  Twitter,
+  Linkedin,
+  Dribbble,
+  Youtube,
+  Mail,
+  Code2,
+} from "lucide-react";
 
 interface FlowCardProps {
   name: string;
@@ -32,11 +42,12 @@ interface FlowCardProps {
   updated_at: string;
   status: string;
   changestate?: (newStatus: string) => Promise<void>;
-  shareThemplate?: () => Promise<void>;
+  shareThemplate?: () => void;
   deleteFlow?: () => void;
+  complexity?: string;
+  onClick?: () => void;
 }
 
-//main function to render the flows card
 export default function FlowsCard({
   name,
   created_at,
@@ -45,91 +56,134 @@ export default function FlowsCard({
   changestate,
   shareThemplate,
   deleteFlow,
+  onClick,
 }: FlowCardProps) {
-  //state to hold the flows
-  return (
-    <div className="flex justify-between items-center p-4 bg-white/5 border border-white/10 rounded-lg">
-      <div className="flex items-center">
-        <div className="w-10 h-10 bg-blue-500/20 rounded flex items-center justify-center mr-4">
-          <Workflow className="text-blue-500" size={24} />
-        </div>
-        <div>
-          <p className="font-medium flex items-center gap-2">
-            {name}{" "}
-            <span
-              className={`${
-                status === "Private"
-                  ? "text-red-500 hover:text-red-600"
-                  : "text-green-500 hover:text-green-600"
-              }`}
-            >
-              <Radio className="w-4" />
-            </span>
-          </p>
-          <p className="text-sm text-muted-foreground">
-            Created on {new Date(created_at).toLocaleDateString()} | Last
-            updated on{" "}
-            {new Date(updated_at).toLocaleDateString(undefined, {
-              year: "numeric",
-              month: "2-digit",
-              day: "2-digit",
-              hour: "2-digit",
-              minute: "2-digit",
-              second: "2-digit",
-              hour12: false,
-            })}
-          </p>
-        </div>
-      </div>
+  const randomTextColor = useMemo(() => {
+    const colors = [
+      "text-red-400",
+      "text-green-400",
+      "text-blue-400",
+      "text-yellow-400",
+      "text-purple-400",
+      "text-pink-400",
+      "text-teal-400",
+      "text-orange-400",
+      "text-indigo-400",
+    ];
+    return colors[Math.floor(Math.random() * colors.length)];
+  }, []);
 
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="ghost">
-            <EllipsisVertical />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent className="w-56">
-          <DropdownMenuGroup>
-            <DropdownMenuItem>
-              <button
-                className="w-full text-left justify-start p-0 flex items-center "
+  const randomBgColor = useMemo(() => {
+    const bgColors = [
+      "bg-red-100",
+      "bg-green-100",
+      "bg-blue-100",
+      "bg-yellow-100",
+      "bg-purple-100",
+      "bg-pink-100",
+      "bg-teal-100",
+      "bg-orange-100",
+      "bg-indigo-100",
+    ];
+    return bgColors[Math.floor(Math.random() * bgColors.length)];
+  }, []);
+
+  function getIconForName(name: string) {
+    const lower = name.toLowerCase();
+
+    if (lower.includes("google")) return <Chrome className="h-8 w-8" />;
+    if (lower.includes("facebook")) return <Facebook className="h-8 w-8" />;
+    if (lower.includes("github")) return <Github className="h-8 w-8" />;
+    if (lower.includes("twitter")) return <Twitter className="h-8 w-8" />;
+    if (lower.includes("linkedin")) return <Linkedin className="h-8 w-8" />;
+    if (lower.includes("dribbble")) return <Dribbble className="h-8 w-8" />;
+    if (lower.includes("youtube")) return <Youtube className="h-8 w-8" />;
+    if (lower.includes("email") || lower.includes("mail"))
+      return <Mail className="h-8 w-8" />;
+
+    // Default icon
+    return <Code2 className="h-8 w-8 text-muted-foreground/30" />;
+  }
+
+  return (
+    <Card className="overflow-hidden relative">
+      {/* Dropdown menu in top-right */}
+      <div className="absolute top-2 right-2 z-10">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon" className="h-8 w-8">
+              <EllipsisVertical className="w-4 h-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent className="w-48">
+            <DropdownMenuGroup>
+              <DropdownMenuItem
                 onClick={(e) => {
-                  e.stopPropagation(); // لمنع النقر من التأثير على البطاقة
+                  e.stopPropagation();
                   changestate?.(status === "Private" ? "Public" : "Private");
                 }}
               >
                 <RadioTower className="w-4 mr-2" />
-                <span>Make {status === "Private" ? "Public" : "Private"}</span>
-              </button>
-            </DropdownMenuItem>
-            <DropdownMenuItem>
-              <button
-                className="w-full text-left justify-start p-0 flex items-center "
+                Make {status === "Private" ? "Public" : "Private"}
+              </DropdownMenuItem>
+              <DropdownMenuItem
                 onClick={(e) => {
-                  e.stopPropagation(); // لمنع النقر من التأثير على البطاقة
-                  shareThemplate?.(); // استدعاء الدالة بعد التأكد من أنه النقر على الزر فقط
+                  e.stopPropagation();
+                  shareThemplate?.();
                 }}
               >
                 <Package className="w-4 mr-2" />
-                <span>Share Themplate</span>
-              </button>
-            </DropdownMenuItem>
-
-            <DropdownMenuItem>
-              <button
-                className="w-full text-left justify-start p-0 flex items-center "
+                Share Template
+              </DropdownMenuItem>
+              <DropdownMenuItem
                 onClick={(e) => {
-                  e.stopPropagation(); // لمنع النقر من التأثير على البطاقة
-                  deleteFlow?.(); // استدعاء الدالة بعد التأكد من أنه النقر على الزر فقط
+                  e.stopPropagation();
+                  deleteFlow?.();
                 }}
               >
                 <Eraser className="w-4 mr-2" />
-                <span>Delete</span>
-              </button>
-            </DropdownMenuItem>
-          </DropdownMenuGroup>
-        </DropdownMenuContent>
-      </DropdownMenu>
-    </div>
+                Delete
+              </DropdownMenuItem>
+            </DropdownMenuGroup>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+
+      <CardHeader>
+        <CardTitle className="flex  items-center justify-between">
+          <span className="flex items-center gap-2">
+            {name}
+            <Radio
+              className={`w-4 ${
+                status === "Private" ? "text-red-500" : "text-green-500"
+              }`}
+            />
+          </span>
+        </CardTitle>
+      </CardHeader>
+
+      <CardContent>
+        <div
+          className={`h-32 ${randomBgColor} rounded-md flex items-center justify-center`}
+        >
+          <span className={`text-3xl ${randomTextColor}`}>
+            {getIconForName(name)}
+          </span>
+        </div>
+
+        <p className="text-xs text-muted-foreground mt-2">
+          Created: {new Date(created_at).toLocaleDateString()} | Updated:{" "}
+          {new Date(updated_at).toLocaleDateString(undefined, {
+            year: "numeric",
+            month: "2-digit",
+            day: "2-digit",
+            hour: "2-digit",
+            minute: "2-digit",
+            second: "2-digit",
+            hour12: false,
+          })}
+        </p>
+      </CardContent>
+    </Card>
   );
 }

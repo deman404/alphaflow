@@ -29,6 +29,14 @@ import { Label } from "@/components/ui/label";
 import WorkflowsList from "@/components/Workflow/WorkflowsList";
 import Themplates from "@/components/Workflow/themplates";
 import themplates from "@/components/Workflow/themplates";
+interface WorkflowTemplate {
+  id: string;
+  user_id: string;
+  name: string;
+  updated_at?: string;
+  description: string;
+  complexity: string;
+}
 
 const Workflow = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -38,7 +46,8 @@ const Workflow = () => {
   const [FlowName, setFlowName] = useState("");
   const [FlowStatus, setFlowStatus] = useState("private");
   const [isClicked, setIsClicked] = useState(false);
-  const [dataTemplates, setDataTemplates] = useState([]);
+  const [dataTemplates, setDataTemplates] = useState<WorkflowTemplate[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
   const toggleSidebar = () => {
@@ -113,7 +122,6 @@ const Workflow = () => {
   );
 
   //handle create new workflow
-
   const handleCreateNewWorkflow = async () => {
     if (isClicked) return;
 
@@ -149,6 +157,28 @@ const Workflow = () => {
       setIsClicked(false);
     }
   };
+
+  // Fetch templates from the database
+  useEffect(() => {
+    if (!session?.user?.id) return;
+
+    const fetchThemplates = async () => {
+      const { error, data } = await supabase
+        .from("workflow_templates")
+        .select("*")
+        .eq("user_id", session.user.id)
+        .order("created_at", { ascending: false })
+        .limit(1)
+      setDataTemplates(data || []);
+      console.log("Templates data:", data);
+      if (error) {
+        console.error("Error fetching templates:", error);
+        toast.error("Failed to load templates");
+      }
+    };
+
+    fetchThemplates();
+  }, [session]);
 
   return (
     <div className="min-h-screen bg-background text-foreground flex">

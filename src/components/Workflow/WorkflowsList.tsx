@@ -6,7 +6,33 @@ import { supabase } from "../../../supabaseClient";
 import FlowsCard from "./FlowsCard";
 import EmptyState from "@/components/EmptyState";
 import { Button } from "@/components/ui/button";
-
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Sheet,
+  SheetClose,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 interface Workflow {
   id: string;
   user_id: string;
@@ -14,7 +40,8 @@ interface Workflow {
   created_at: string;
   updated_at: string;
   status: string;
-  data: any; 
+  data: any;
+  description?: string;
 }
 
 interface Profile {
@@ -29,6 +56,8 @@ interface WorkflowTemplate {
   user_id: string;
   name: string;
   update_at?: string;
+  complexity?: string;
+  description?: string;
 }
 
 export default function WorkflowsList() {
@@ -39,6 +68,7 @@ export default function WorkflowsList() {
   const [workflowTemplate, setWorkflowTemplate] =
     useState<WorkflowTemplate | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [cardOpen, setCardOpen] = useState(false);
   const navigate = useNavigate();
 
   // Initialize session
@@ -104,120 +134,139 @@ export default function WorkflowsList() {
   }, [session]);
 
   // Fetch workflows
-useEffect(() => {
-  if (!session?.user?.id) return;
+  useEffect(() => {
+    if (!session?.user?.id) return;
 
-  const fetchWorkflowsData = async () => {
-    setIsLoading(true);
+    const fetchWorkflowsData = async () => {
+      setIsLoading(true);
+      try {
+        const workflowsData = await supabase
+          .from("workflows")
+          .select("*")
+          .eq("user_id", session.user.id)
+          .order("created_at", { ascending: false });
+
+        const workflows: Workflow[] = workflowsData.error
+          ? []
+          : workflowsData.data || [];
+        setWorkflows(workflows);
+      } catch (error) {
+        console.error("Error fetching workflows:", error);
+        toast.error("Failed to load workflows");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchWorkflowsData();
+  }, [session]);
+
+  // Fetch template
+  useEffect(() => {
+    if (!session?.user?.id) return;
+
+    const fetchTemplateData = async () => {
+      setIsLoading(true);
+      try {
+        const templateData = await supabase
+          .from("workflow_templates")
+          .select("*")
+          .eq("user_id", session.user.id)
+          .single();
+
+        setWorkflowTemplate(templateData.error ? null : templateData.data);
+      } catch (error) {
+        console.error("Error fetching template:", error);
+        toast.error("Failed to load template");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchTemplateData();
+  }, [session]);
+
+  // Handle Status Change
+  const handleStatusChange = async (workflowId: string, newStatus: string) => {
     try {
-      const workflowsData = await supabase
+      const { error } = await supabase
         .from("workflows")
-        .select("*")
-        .eq("user_id", session.user.id)
-        .order("created_at", { ascending: false });
+        .update({ status: newStatus })
+        .eq("id", workflowId);
 
-      const workflows: Workflow[] = workflowsData.error
-        ? []
-        : workflowsData.data || [];
-      setWorkflows(workflows);
+      if (error) throw error;
+
+      setWorkflows((prev) =>
+        prev.map((workflow) =>
+          workflow.id === workflowId
+            ? { ...workflow, status: newStatus }
+            : workflow
+        )
+      );
+      toast.success("Status updated successfully");
     } catch (error) {
-      console.error("Error fetching workflows:", error);
-      toast.error("Failed to load workflows");
-    } finally {
-      setIsLoading(false);
+      console.error("Error updating status:", error);
+      toast.error("Failed to update status");
     }
   };
 
-  fetchWorkflowsData();
-}, [session]);
-
-// Fetch template
-useEffect(() => {
-  if (!session?.user?.id) return;
-
-  const fetchTemplateData = async () => {
-    setIsLoading(true);
+  // Handle Share Template (using data from workflows)
+  const handleShareTemplate = async (workflowId: string) => {
     try {
-      const templateData = await supabase
-        .from("workflow_templates")
-        .select("*")
-        .eq("user_id", session.user.id)
-        .single();
+      const workflowToShare = workflows.find((w) => w.id === workflowId);
+      if (!workflowToShare) return toast.error("Workflow not found.");
 
-      setWorkflowTemplate(templateData.error ? null : templateData.data);
+      const { flow_name, user_id, data } = workflowToShare;
+
+      const { error } = await supabase.from("workflow_templates").upsert({
+        id: workflowId,
+        name: flow_name,
+        user_id,
+        content: data,
+        updated_at: new Date().toISOString(),
+      });
+
+      if (error) throw error;
+
+      const shareableLink = `${window.location.origin}/shared-template/${workflowId}`;
+      await navigator.clipboard.writeText(shareableLink);
+      toast.success("Template shared! Link copied to clipboard.");
     } catch (error) {
-      console.error("Error fetching template:", error);
-      toast.error("Failed to load template");
-    } finally {
-      setIsLoading(false);
+      console.error("Error sharing template:", error);
+      toast.error("Failed to share template");
     }
   };
 
-  fetchTemplateData();
-}, [session]);
+  const handleOpenSheetWithTemplate = (workflow: Workflow) => {
+    setWorkflowTemplate({
+      id: workflow.id,
+      user_id: workflow.user_id,
+      name: workflow.flow_name,
+      description: workflow.description, // أضف المزيد لو أردت
+      update_at: workflow.updated_at,
+    });
+    setCardOpen(true);
+  };
 
-// Handle Status Change
-const handleStatusChange = async (workflowId: string, newStatus: string) => {
-  try {
-    const { error } = await supabase
-      .from("workflows")
-      .update({ status: newStatus })
-      .eq("id", workflowId);
-
-    if (error) throw error;
-
-    setWorkflows((prev) =>
-      prev.map((workflow) =>
-        workflow.id === workflowId
-          ? { ...workflow, status: newStatus }
-          : workflow
-      )
+  const deleteHandler = async (workflowId: string) => {
+    const confirmed = window.confirm(
+      "Are you sure you want to delete this flow?"
     );
-    toast.success("Status updated successfully");
-  } catch (error) {
-    console.error("Error updating status:", error);
-    toast.error("Failed to update status");
-  }
-};
+    if (!confirmed) return;
 
-// Handle Share Template (using data from workflows)
-const handleShareTemplate = async (workflowId: string) => {
-  try {
-    // Find the workflow to share
-    const workflowToShare = workflows.find((workflow) => workflow.id === workflowId);
-
-    if (!workflowToShare) {
-      toast.error("Workflow not found.");
-      return;
-    }
-
-    const { flow_name, user_id, data } = workflowToShare;
-    // Check if the workflow is already shared
-    console.log("Workflow to share:", workflowToShare);
-
-    // Upsert the workflow template (create or update)
     const { error } = await supabase
-      .from("workflow_templates")
-      .upsert({
-        name: flow_name,               // Name from workflow
-        user_id: user_id,         // User ID from workflow
-        content: data,         // Content from workflow (JSON)
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", workflowId);
+      .from("workflows") // اسم الجدول
+      .delete()
+      .eq("id", workflowId); 
 
-    if (error) throw error;
-
-    // Generate the shareable link
-    const shareableLink = `${window.location.origin}/shared-template/${workflowId}`;
-    await navigator.clipboard.writeText(shareableLink);
-    toast.success("Template shared! Link copied to clipboard.");
-  } catch (error) {
-    console.error("Error sharing template:", error);
-    toast.error("Failed to share template");
-  }
-};
-
+    if (error) {
+      console.error("Failed to delete flow:", error.message);
+      // يمكنك عرض إشعار هنا باستخدام toast أو أي مكتبة
+    } else {
+      console.log("Flow deleted successfully.");
+      // قم هنا بتحديث الواجهة أو الحالة حسب الحاجة
+    }
+  };
 
   if (isLoading && workflows.length === 0) {
     return (
@@ -228,7 +277,7 @@ const handleShareTemplate = async (workflowId: string) => {
   }
 
   return (
-    <div className="grid gap-6">
+    <div className="grid grid-cols-3 sm:grid-cols-3 lg:grid-cols-3 gap-6 ">
       {workflows.length === 0 ? (
         <EmptyState
           title="No workflows yet"
@@ -241,7 +290,7 @@ const handleShareTemplate = async (workflowId: string) => {
             <div
               key={flow.id}
               onClick={() => navigate(`/workflows/${flow.id}`)}
-              className="cursor-pointer"
+              className="cursor-pointer "
             >
               <FlowsCard
                 name={flow.flow_name}
@@ -251,8 +300,9 @@ const handleShareTemplate = async (workflowId: string) => {
                 changestate={(newStatus) =>
                   handleStatusChange(flow.id, newStatus)
                 }
-                shareThemplate={() => handleShareTemplate(flow.id)}
-                deleteFlow={() => {}}
+                shareThemplate={() => handleOpenSheetWithTemplate(flow)}
+                deleteFlow={() => {deleteHandler(flow.id);console.log("Delete flow" + flow.id)}
+                }
               />
             </div>
           ))}
@@ -268,6 +318,55 @@ const handleShareTemplate = async (workflowId: string) => {
           )}
         </>
       )}
+
+      {cardOpen && workflowTemplate ? (
+        <Sheet open={cardOpen} onOpenChange={setCardOpen}>
+          <SheetContent>
+            <SheetHeader>
+              <SheetTitle>Share your workflow</SheetTitle>
+              <SheetDescription>
+                Share your workflow with others by send it to themplate page
+              </SheetDescription>
+            </SheetHeader>
+            <div className="grid gap-4 py-4">
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="name" className="text-right">
+                  Flow Name
+                </Label>
+                <Input
+                  id="name"
+                  value={workflowTemplate.name}
+                  className="col-span-3"
+                  readOnly
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="username" className="text-right">
+                  Flow Admin
+                </Label>
+                <Input
+                  id="username"
+                  value={workflowTemplate.user_id}
+                  className="col-span-3"
+                  readOnly
+                />
+              </div>
+            </div>
+            <SheetFooter>
+              <SheetClose asChild>
+                <Button
+                  type="submit"
+                  onClick={() =>
+                    handleShareTemplate(workflowTemplate?.id || "")
+                  }
+                >
+                  Save changes
+                </Button>
+              </SheetClose>
+            </SheetFooter>
+          </SheetContent>
+        </Sheet>
+      ) : null}
     </div>
   );
 }
