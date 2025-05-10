@@ -3,7 +3,15 @@ import { Button } from "@/components/ui/button";
 import { Settings as SettingsIcon, Bell } from "lucide-react";
 import { supabase } from "../../../supabaseClient";
 import { useNavigate } from "react-router-dom";
-export default function Header() {
+
+
+interface HeaderProps {
+  hname : String
+  hdescription : String
+}
+
+
+export default function Header({hname ,hdescription} : HeaderProps) {
   const [session, setSession] = useState(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [userProfile, setUserProfile] = useState(null);
@@ -57,9 +65,9 @@ export default function Header() {
   return (
     <div className="flex justify-between items-center mb-8">
       <div>
-        <h1 className="text-3xl font-bold mb-1">Settings</h1>
+        <h1 className="text-3xl font-bold mb-1">{hname}</h1>
         <p className="text-muted-foreground">
-          Manage your account and preferences
+          {hdescription}
         </p>
       </div>
       <div className="flex items-center space-x-3">

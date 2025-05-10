@@ -69,6 +69,9 @@ export default function WorkflowsList() {
     useState<WorkflowTemplate | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [cardOpen, setCardOpen] = useState(false);
+  const [workflowDescription, setWorkflowDescription] = useState<
+    string | undefined
+  >(undefined);
   const navigate = useNavigate();
 
   // Initialize session
@@ -224,6 +227,7 @@ export default function WorkflowsList() {
         user_id,
         content: data,
         updated_at: new Date().toISOString(),
+        description: workflowDescription,
       });
 
       if (error) throw error;
@@ -257,7 +261,7 @@ export default function WorkflowsList() {
     const { error } = await supabase
       .from("workflows") // اسم الجدول
       .delete()
-      .eq("id", workflowId); 
+      .eq("id", workflowId);
 
     if (error) {
       console.error("Failed to delete flow:", error.message);
@@ -301,8 +305,10 @@ export default function WorkflowsList() {
                   handleStatusChange(flow.id, newStatus)
                 }
                 shareThemplate={() => handleOpenSheetWithTemplate(flow)}
-                deleteFlow={() => {deleteHandler(flow.id);console.log("Delete flow" + flow.id)}
-                }
+                deleteFlow={() => {
+                  deleteHandler(flow.id);
+                  console.log("Delete flow" + flow.id);
+                }}
               />
             </div>
           ))}
@@ -349,6 +355,18 @@ export default function WorkflowsList() {
                   value={workflowTemplate.user_id}
                   className="col-span-3"
                   readOnly
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="description" className="text-right">
+                  Flow Description
+                </Label>
+                <Input
+                  id="description"
+                  onChange={(e) => setWorkflowDescription(e.target.value)}
+                  placeholder="Add a description"
+                  className="col-span-3"
+                  
                 />
               </div>
             </div>

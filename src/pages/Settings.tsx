@@ -82,7 +82,7 @@ const Settings = () => {
       >
         <div className="p-6">
           {/* Header */}
-          <Header />
+          <Header hname={"Settings"} hdescription={"Manage your account settings"} />
 
           {/* Settings Navigation and Content */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">

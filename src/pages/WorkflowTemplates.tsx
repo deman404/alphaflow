@@ -1,6 +1,5 @@
-
-import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -13,199 +12,177 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ArrowLeft, FileText, ArrowRight } from "lucide-react";
 import { toast } from "sonner";
-import { supabase } from '../../supabaseClient';
+import { supabase } from "../../supabaseClient";
+import Header from "@/components/settings/Header";
+import { Skeleton } from "@/components/ui/skeleton";
 // Template definitions
-const automationTemplates = [
-  {
-    id: 'email-workflow',
-    name: 'Email Processing',
-    description: 'Automatically categorize, respond to, and route incoming emails based on content.',
-    category: 'automation',
-    complexity: 'Medium',
-    nodes: [
-      { id: 'trigger_email', type: 'trigger_email', position: { x: 100, y: 100 }, data: { label: 'Email Received' } },
-      { id: 'logic_condition', type: 'logic_condition', position: { x: 300, y: 100 }, data: { label: 'Check Content' } },
-      { id: 'action_notification', type: 'action_notification', position: { x: 500, y: 50 }, data: { label: 'Send Notification' } },
-      { id: 'action_email', type: 'action_email', position: { x: 500, y: 150 }, data: { label: 'Send Reply' } }
-    ],
-    edges: [
-      { id: 'e1-2', source: 'trigger_email', target: 'logic_condition' },
-      { id: 'e2-3', source: 'logic_condition', target: 'action_notification' },
-      { id: 'e2-4', source: 'logic_condition', target: 'action_email' }
-    ]
-  },
-  {
-    id: 'schedule-tasks',
-    name: 'Scheduled Tasks',
-    description: 'Run tasks on a schedule with notification and logging capabilities.',
-    category: 'automation',
-    complexity: 'Simple',
-    nodes: [
-      { id: 'trigger_schedule', type: 'trigger_schedule', position: { x: 100, y: 100 }, data: { label: 'Schedule Trigger' } },
-      { id: 'action_database', type: 'action_database', position: { x: 300, y: 100 }, data: { label: 'Update Database' } },
-      { id: 'action_notification', type: 'action_notification', position: { x: 500, y: 100 }, data: { label: 'Send Notification' } }
-    ],
-    edges: [
-      { id: 'e1-2', source: 'trigger_schedule', target: 'action_database' },
-      { id: 'e2-3', source: 'action_database', target: 'action_notification' }
-    ]
-  }
-];
 
-const integrationTemplates = [
-  {
-    id: 'webhook-processor',
-    name: 'Webhook Integration',
-    description: 'Process incoming webhooks and route data to different systems.',
-    category: 'integration',
-    complexity: 'Advanced',
-    nodes: [
-      { id: 'trigger_webhook', type: 'trigger_webhook', position: { x: 100, y: 100 }, data: { label: 'Webhook Received' } },
-      { id: 'logic_switch', type: 'logic_switch', position: { x: 300, y: 100 }, data: { label: 'Route Data' } },
-      { id: 'action_database', type: 'action_database', position: { x: 500, y: 50 }, data: { label: 'Store in Database' } },
-      { id: 'action_notification', type: 'action_notification', position: { x: 500, y: 150 }, data: { label: 'Send Notification' } }
-    ],
-    edges: [
-      { id: 'e1-2', source: 'trigger_webhook', target: 'logic_switch' },
-      { id: 'e2-3', source: 'logic_switch', target: 'action_database' },
-      { id: 'e2-4', source: 'logic_switch', target: 'action_notification' }
-    ]
-  }
-];
-
-const dataTemplates = [
-  {
-    id: 'data-transformation',
-    name: 'Data Transformation',
-    description: 'Extract, transform, and load data between different systems.',
-    category: 'data',
-    complexity: 'Advanced',
-    nodes: [
-      { id: 'trigger_schedule', type: 'trigger_schedule', position: { x: 100, y: 100 }, data: { label: 'Schedule Trigger' } },
-      { id: 'action_database', type: 'action_database', position: { x: 300, y: 50 }, data: { label: 'Extract Data' } },
-      { id: 'logic_condition', type: 'logic_condition', position: { x: 300, y: 150 }, data: { label: 'Transform Data' } },
-      { id: 'action_database', type: 'action_database', position: { x: 500, y: 100 }, data: { label: 'Load Data' } }
-    ],
-    edges: [
-      { id: 'e1-2', source: 'trigger_schedule', target: 'action_database' },
-      { id: 'e1-3', source: 'trigger_schedule', target: 'logic_condition' },
-      { id: 'e2-4', source: 'action_database', target: 'action_database' },
-      { id: 'e3-4', source: 'logic_condition', target: 'action_database' }
-    ]
-  }
-];
+interface WorkflowTemplate {
+  id: string;
+  user_id: string;
+  name: string;
+  updated_at?: string;
+  description: string;
+  complexity: string;
+  content: any;
+}
 
 const WorkflowTemplates: React.FC = () => {
   const navigate = useNavigate();
-  const [session, setSession] = React.useState<any>(null);
+  const [session, setSession] = useState(null);
   const [userProfile, setUserProfile] = React.useState<any>(null);
-  
-
-
+  const [dataTemplates, setDataTemplates] = useState<WorkflowTemplate[]>([]);
+  const [loading, setLoading] = useState(true);
   const handleTemplateSelect = (template: any) => {
     // Store the selected template in sessionStorage to use in the editor
-    sessionStorage.setItem('selectedTemplate', JSON.stringify(template));
-    toast.success(`${template.name} template selected`);
-    navigate('/workflow-editor');
+  };
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      if (session?.user?.id) {
+        fetchProfileOrFallback(session);
+      }
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+      if (session?.user?.id) {
+        fetchProfileOrFallback(session);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+  const fetchProfileOrFallback = async (session) => {
+    const userId = session.user.id;
+
+    const { data, error } = await supabase
+      .from("profile")
+      .select("*")
+      .eq("user_id", userId)
+      .single();
+
+    if (error || !data) {
+      // Fallback to session data
+      const fallbackProfile = {
+        user_id: userId,
+        name: session.user.user_metadata?.name,
+        email: session.user.user_metadata?.email,
+        picture: session.user.user_metadata?.picture,
+      };
+      setUserProfile(fallbackProfile);
+    } else {
+      setUserProfile(data);
+    }
   };
 
-  const renderTemplateCards = (templates: any[]) => {
-    return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {templates.map((template) => (
-          <Card key={template.id} className="overflow-hidden">
-            <CardHeader>
-              <CardTitle className="flex items-center justify-between">
-                <span>{template.name}</span>
-                <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded-full">
-                  {template.complexity}
-                </span>
-              </CardTitle>
-              <CardDescription>{template.description}</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="h-32 bg-muted rounded-md flex items-center justify-center">
-                <FileText className="h-12 w-12 text-muted-foreground/30" />
-              </div>
-            </CardContent>
-            <CardFooter className="flex justify-between">
-              <Button variant="outline" size="sm">
-                Preview
-              </Button>
-              <Button
-                onClick={() => handleTemplateSelect(template)}
-                size="sm"
-                className="gap-1"
-              >
-                Use Template
-                <ArrowRight className="h-4 w-4" />
-              </Button>
-            </CardFooter>
-          </Card>
-        ))}
-      </div>
-    );
+  useEffect(() => {
+    if (!session?.user?.id) return;
+
+    const fetchThemplates = async () => {
+      setLoading(true);
+      try {
+        const workflowsData = await supabase
+          .from("workflow_templates")
+          .select("*")
+          .order("created_at", { ascending: false });
+
+        const workflows: WorkflowTemplate[] = workflowsData.error
+          ? []
+          : workflowsData.data || [];
+        setDataTemplates(workflows);
+      } catch (error) {
+        console.error("Error fetching workflows:", error);
+        toast.error("Failed to load workflows");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchThemplates();
+  }, [session]);
+
+  const UseThemplateTomyProfile = (template: WorkflowTemplate) => {
+    const { name, updated_at, description,  content } = template;
+
+    const newTemplate = {
+      user_id: session?.user?.id,
+      flow_name: name,
+      data: content,
+      created_at: new Date().toISOString(),
+      updated_at: updated_at,
+      status: "Private",
+    };
+
+    supabase
+      .from("workflows")
+      .insert([newTemplate])
+      .then(({ data, error }) => {
+        if (error) {
+          console.error("Error inserting workflow:", error);
+          toast.error("Failed to insert workflow");
+        } else {
+          toast.success("Workflow added to your profile");
+          navigate("/workflows");
+        }
+      });
   };
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <Button 
-        variant="outline" 
-        size="sm"
-        className="mb-6" 
-        onClick={() => navigate('/dashboard')}
-      >
-        <ArrowLeft className="mr-2 h-4 w-4" />
-        Back to Dashboard
-      </Button>
-      
-      <div className="flex items-center gap-3 mb-6">
-        <div className="h-10 w-10 rounded-md bg-primary/10 flex items-center justify-center">
-          <FileText className="h-5 w-5 text-primary" />
-        </div>
-        <div>
-          <h1 className="text-2xl font-bold">Workflow Templates</h1>
-          <p className="text-muted-foreground">Start with a pre-built workflow template</p>
-        </div>
-      </div>
+      <Header
+        hname={"Workflow Templates"}
+        hdescription={"Find workflows templates from all the globe"}
+      />
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {loading == false ? (
+          <>
+            {dataTemplates.map((template) => (
+              <Card
+                key={template.id}
+                className="hover:shadow-lg transition-shadow"
+                onClick={() => {
+                  console.log(template.id);
+                }}
+              >
+                <CardHeader>
+                  <CardTitle>{template.name}</CardTitle>
+                  <CardDescription>{template.description}</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Button onClick={() => UseThemplateTomyProfile(template)}>
+                    Use Template
+                  </Button>
+                </CardContent>
+              </Card>
+            ))}
+          </>
+        ) : (
+          <>
+            {[...Array(6)].map((_, index) => (
+              <Card
+                key={index}
+                className="hover:shadow-md transition-shadow overflow-hidden"
+              >
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <Skeleton className="h-4 w-2/5" />
+                    <Skeleton className="h-4 w-16 rounded-full" />
+                  </div>
+                  <Skeleton className="h-3 w-3/4 mt-2" />
+                  <Skeleton className="h-3 w-3/4 mt-2" />
+                </CardHeader>
 
-      <Tabs defaultValue="automation" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="automation">Automation</TabsTrigger>
-          <TabsTrigger value="integration">Integration</TabsTrigger>
-          <TabsTrigger value="data">Data Processing</TabsTrigger>
-        </TabsList>
-        
-        <TabsContent value="automation" className="space-y-4">
-          <div className="pb-2">
-            <h3 className="text-lg font-medium">Automation Templates</h3>
-            <p className="text-sm text-muted-foreground">
-              Templates for automating repetitive tasks and processes.
-            </p>
-          </div>
-          {renderTemplateCards(automationTemplates)}
-        </TabsContent>
-        
-        <TabsContent value="integration" className="space-y-4">
-          <div className="pb-2">
-            <h3 className="text-lg font-medium">Integration Templates</h3>
-            <p className="text-sm text-muted-foreground">
-              Templates for connecting different systems and applications.
-            </p>
-          </div>
-          {renderTemplateCards(integrationTemplates)}
-        </TabsContent>
-        
-        <TabsContent value="data" className="space-y-4">
-          <div className="pb-2">
-            <h3 className="text-lg font-medium">Data Processing Templates</h3>
-            <p className="text-sm text-muted-foreground">
-              Templates for working with and transforming data.
-            </p>
-          </div>
-          {renderTemplateCards(dataTemplates)}
-        </TabsContent>
-      </Tabs>
+                <CardFooter className="flex justify-start space-x-2">
+                  <Skeleton className="h-8 w-24 rounded-md" />
+                </CardFooter>
+              </Card>
+            ))}
+          </>
+        )}
+      </div>
     </div>
   );
 };

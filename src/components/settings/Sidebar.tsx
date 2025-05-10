@@ -11,6 +11,7 @@ import {
   LogOut,
   ChevronLeft,
   ChevronRight,
+  WalletCards,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 
@@ -86,6 +87,15 @@ const Sidebar: React.FC<SidebarProps> = ({
                 className={`h-4 w-4 ${sidebarCollapsed ? "mr-0" : "mr-2"}`}
               />
               {!sidebarCollapsed && "Analytics"}
+            </Button>
+
+            <Button variant="ghost" className="w-full justify-start" asChild>
+              <Link to="/workflow-templates">
+                <FileText
+                  className={`h-4 w-4 ${sidebarCollapsed ? "mr-0" : "mr-2"}`}
+                />
+                {!sidebarCollapsed && "All Themplates"}
+              </Link>
             </Button>
 
             {!sidebarCollapsed && (

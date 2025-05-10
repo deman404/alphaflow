@@ -29,6 +29,7 @@ import { Label } from "@/components/ui/label";
 import WorkflowsList from "@/components/Workflow/WorkflowsList";
 import Themplates from "@/components/Workflow/themplates";
 import themplates from "@/components/Workflow/themplates";
+
 interface WorkflowTemplate {
   id: string;
   user_id: string;
@@ -53,8 +54,8 @@ const Workflow = () => {
   const toggleSidebar = () => {
     setSidebarCollapsed((prev) => !prev);
   };
-  const handleSave = () => {
-    toast.success("Settings updated successfully");
+  const handelGoSeeAll = () => {
+    navigate("/workflow-templates");
   };
 
   useEffect(() => {
@@ -166,11 +167,9 @@ const Workflow = () => {
       const { error, data } = await supabase
         .from("workflow_templates")
         .select("*")
-        .eq("user_id", session.user.id)
         .order("created_at", { ascending: false })
-        .limit(1)
+        .eq("user_id", session.user.id);
       setDataTemplates(data || []);
-      console.log("Templates data:", data);
       if (error) {
         console.error("Error fetching templates:", error);
         toast.error("Failed to load templates");
@@ -179,6 +178,24 @@ const Workflow = () => {
 
     fetchThemplates();
   }, [session]);
+
+  const deleteHandler = async (workflowId: string) => {
+    const confirmed = window.confirm(
+      "Are you sure you want to delete this flow?"
+    );
+    if (!confirmed) return;
+
+    const { error } = await supabase
+      .from("workflow_templates")
+      .delete()
+      .eq("id", workflowId);
+
+    if (error) {
+      console.error("Failed to delete flow:", error.message);
+    } else {
+      console.log("Flow deleted successfully.");
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background text-foreground flex">
@@ -292,10 +309,12 @@ const Workflow = () => {
           {userProfile?.user_id != null && dataTemplates.length > 0 ? (
             <>
               <div className="flex justify-between items-center mb-6 mt-12">
-                <h2 className="text-xl font-semibold">Workflows Templates</h2>
+                <h2 className="text-xl font-semibold">
+                  My Workflows Templates
+                </h2>
                 <Button
                   variant="ghost"
-                  onClick={() => {}}
+                  onClick={handelGoSeeAll}
                   className="flex items-center gap-2"
                 >
                   See All
@@ -312,6 +331,9 @@ const Workflow = () => {
                       toast.success("Workflow created successfully");
                       navigate(`/workflows/${themplate.id}`);
                     }}
+                    deleteFlow={() => {
+                      deleteHandler(themplate.id);
+                    }}
                   />
                 ))}
               </div>
@@ -319,10 +341,12 @@ const Workflow = () => {
           ) : (
             <>
               <div className="flex justify-between items-center mb-6 mt-12">
-                <h2 className="text-xl font-semibold">Workflows Templates</h2>
+                <h2 className="text-xl font-semibold">
+                  My Workflows Templates
+                </h2>
                 <Button
                   variant="ghost"
-                  onClick={() => {}}
+                  onClick={handelGoSeeAll}
                   className="flex items-center gap-2"
                 >
                   See All
