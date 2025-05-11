@@ -29,6 +29,7 @@ import { Label } from "@/components/ui/label";
 import WorkflowsList from "@/components/Workflow/WorkflowsList";
 import Themplates from "@/components/Workflow/themplates";
 import themplates from "@/components/Workflow/themplates";
+import { Content } from "vaul";
 
 interface WorkflowTemplate {
   id: string;
@@ -145,6 +146,9 @@ const Workflow = () => {
           },
         ])
         .single();
+        sendNewsForNewWorkflow(FlowName);
+
+      
 
       if (error) throw error;
 
@@ -156,6 +160,30 @@ const Workflow = () => {
       toast.error("Error creating workflow");
     } finally {
       setIsClicked(false);
+    }
+  };
+
+  //send news for new workflow
+  const sendNewsForNewWorkflow = async (workflowName: string) => {
+    try {
+      const { error } = await supabase
+        .from("news")
+        .insert([
+          {
+            user_id: session.user.id,
+            title: "New workflow created" + workflowName,
+            content: `A new workflow named "${workflowName}" has been created.`,
+            label: "new",
+            created_at: new Date().toISOString(),
+          },
+        ])
+        .single();
+
+      if (error) throw error;
+
+      toast.success("News sent successfully");
+    } catch (error) {
+      toast.error("Error sending news");
     }
   };
 

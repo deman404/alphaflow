@@ -14,6 +14,9 @@ import {
   WalletCards,
 } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+import { supabase } from "../../../supabaseClient";
+
 
 interface SidebarProps {
   sidebarCollapsed: boolean;
@@ -24,6 +27,11 @@ const Sidebar: React.FC<SidebarProps> = ({
   sidebarCollapsed,
   onSidebarToggle,
 }) => {
+  const navigate = useNavigate();
+  const LogoutSupa = async () => {
+    const { error } = await supabase.auth.signOut();
+    navigate("/");
+  };
   return (
     <div
       className={`h-screen fixed left-0 top-0 z-40 bg-secondary/10 backdrop-blur-md border-r border-white/10 transition-all duration-300 ${
@@ -125,6 +133,7 @@ const Sidebar: React.FC<SidebarProps> = ({
           <Button
             variant="ghost"
             className="w-full justify-start text-red-400 hover:text-red-500 hover:bg-red-500/10"
+            onClick={LogoutSupa}
           >
             <LogOut
               className={`h-4 w-4 ${sidebarCollapsed ? "mr-0" : "mr-2"}`}

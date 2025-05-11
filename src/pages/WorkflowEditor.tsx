@@ -300,10 +300,34 @@ const WorkflowEditor: React.FC = () => {
       setCanBack(true);
 
       toast.success("Workflow saved successfully!");
+      sendNewsForUpdatedWorkflow(workflowName);
     } catch (error) {
       toast.error(`Save failed: ${error.message}`);
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const sendNewsForUpdatedWorkflow = async (workflowName: string) => {
+    try {
+      const { error } = await supabase
+        .from("news")
+        .insert([
+          {
+            user_id: session.user.id,
+            title: "New workflow updated" + workflowName,
+            content: `A new workflow named "${workflowName}" has been updated.`,
+            label: "update",
+            created_at: new Date().toISOString(),
+          },
+        ])
+        .single();
+
+      if (error) throw error;
+
+      toast.success("News sent successfully");
+    } catch (error) {
+      toast.error("Error sending news");
     }
   };
 

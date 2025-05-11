@@ -246,10 +246,11 @@ export default function WorkflowsList() {
       id: workflow.id,
       user_id: workflow.user_id,
       name: workflow.flow_name,
-      description: workflow.description, // أضف المزيد لو أردت
+      description: workflow.description,
       update_at: workflow.updated_at,
     });
     setCardOpen(true);
+    sendNewsForSharedWorkflow(workflow.flow_name);
   };
 
   const deleteHandler = async (workflowId: string) => {
@@ -268,7 +269,54 @@ export default function WorkflowsList() {
       // يمكنك عرض إشعار هنا باستخدام toast أو أي مكتبة
     } else {
       console.log("Flow deleted successfully.");
+      sendNewsForDeletedWorkflow(workflowId);
       // قم هنا بتحديث الواجهة أو الحالة حسب الحاجة
+    }
+  };
+
+  const sendNewsForSharedWorkflow = async (workflowName: string) => {
+    try {
+      const { error } = await supabase
+        .from("news")
+        .insert([
+          {
+            user_id: session.user.id,
+            title: "New workflow themplate shared" + workflowName,
+            content: `A new workflow themplate named "${workflowName}" has been shared.`,
+            label: "share",
+            created_at: new Date().toISOString(),
+          },
+        ])
+        .single();
+
+      if (error) throw error;
+
+      toast.success("News sent successfully");
+    } catch (error) {
+      toast.error("Error sending news");
+    }
+  };
+
+  const sendNewsForDeletedWorkflow = async (workflowId: string) => {
+    try {
+      const { error } = await supabase
+        .from("news")
+        .insert([
+          {
+            user_id: session.user.id,
+            title: "You was deleted a workflow with id " + workflowId,
+            content: `"${workflowId}" has been deleted.`,
+            label: "delete",
+            created_at: new Date().toISOString(),
+          },
+        ])
+        .single();
+
+      if (error) throw error;
+
+      toast.success("News sent successfully");
+    } catch (error) {
+      toast.error("Error sending news");
     }
   };
 
@@ -366,7 +414,6 @@ export default function WorkflowsList() {
                   onChange={(e) => setWorkflowDescription(e.target.value)}
                   placeholder="Add a description"
                   className="col-span-3"
-                  
                 />
               </div>
             </div>
