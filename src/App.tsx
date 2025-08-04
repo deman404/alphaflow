@@ -14,7 +14,6 @@ import Blog from "./pages/Blog";
 import Community from "./pages/Community";
 import Tutorials from "./pages/Tutorials";
 import API from "./pages/API";
-import Roadmap from "./pages/Roadmap";
 import RequestFeature from "./pages/RequestFeature";
 import Careers from "./pages/Careers";
 import Privacy from "./pages/Privacy";
@@ -24,6 +23,7 @@ import Settings from "./pages/Settings";
 import Workflow from "./pages/Workflow";
 import WorkflowEditor from "./pages/WorkflowEditor";
 import WorkflowTemplates from "./pages/WorkflowTemplates";
+import Login from "./pages/Login";
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -34,6 +34,7 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Index />} />
+          <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/about" element={<About />} />
@@ -43,7 +44,6 @@ const App = () => (
           <Route path="/community" element={<Community />} />
           <Route path="/tutorials" element={<Tutorials />} />
           <Route path="/api" element={<API />} />
-          <Route path="/roadmap" element={<Roadmap />} />
           <Route path="/request-feature" element={<RequestFeature />} />
           <Route path="/careers" element={<Careers />} />
           <Route path="/privacy" element={<Privacy />} />
