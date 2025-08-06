@@ -30,7 +30,6 @@ import {
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
-import { supabase } from "../../supabaseClient";
 
 //components
 import Sidebar from "@/components/settings/Sidebar";
@@ -82,7 +81,10 @@ const Settings = () => {
       >
         <div className="p-6">
           {/* Header */}
-          <Header hname={"Settings"} hdescription={"Manage your account settings"} />
+          <Header
+            hname={"Settings"}
+            hdescription={"Manage your account settings"}
+          />
 
           {/* Settings Navigation and Content */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">

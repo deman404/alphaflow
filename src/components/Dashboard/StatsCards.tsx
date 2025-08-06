@@ -28,7 +28,7 @@ import {
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "../../../supabaseClient";
+
 import { toast } from "sonner";
 
 interface Workflow {
@@ -49,73 +49,7 @@ export default function StatsCards() {
   const [dataTemplates, setDataTemplates] = useState<Workflow[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      if (session?.user?.id) {
-        fetchProfileOrFallback(session);
-      }
-    });
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-      if (session?.user?.id) {
-        fetchProfileOrFallback(session);
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
-  const fetchProfileOrFallback = async (session) => {
-    const userId = session.user.id;
-
-    const { data, error } = await supabase
-      .from("profile")
-      .select("*")
-      .eq("user_id", userId)
-      .single();
-
-    if (error || !data) {
-      // Fallback to session data
-      const fallbackProfile = {
-        user_id: userId,
-        name: session.user.user_metadata?.name,
-        email: session.user.user_metadata?.email,
-        picture: session.user.user_metadata?.picture,
-      };
-      setUserProfile(fallbackProfile);
-    } else {
-      setUserProfile(data);
-    }
-  };
-
-  useEffect(() => {
-    if (!session?.user?.id) return;
-
-    const fetchThemplates = async () => {
-      setLoading(true);
-      try {
-        const workflowsData = await supabase
-          .from("workflows")
-          .select("*")
-          .order("created_at", { ascending: false });
-
-        const workflows: Workflow[] = workflowsData.error
-          ? []
-          : workflowsData.data || [];
-        setDataTemplates(workflows);
-      } catch (error) {
-        console.error("Error fetching workflows:", error);
-        toast.error("Failed to load workflows");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchThemplates();
-  }, [session]);
+  const fetchProfileOrFallback = async (session) => {};
 
   const publicFlows = dataTemplates.filter(
     (template) => template.status === "Public"
@@ -132,7 +66,7 @@ export default function StatsCards() {
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-8">
-      <Card className="bg-card/50 backdrop-blur-sm border border-white/10">
+      <Card className="bg-card/50 backdrop-blur-sm border border-dashed border-black/15">
         <CardContent className="p-6">
           <div className="flex items-center justify-between">
             <div>
@@ -143,14 +77,14 @@ export default function StatsCards() {
                 <span>{increase} public flows created in the last week</span>
               </p>
             </div>
-            <div className="bg-primary/20 p-3 rounded-full">
+            <div className="bg-primary/20 p-3 rounded-full border border-dashed border-black/15">
               <Zap className="h-6 w-6 text-primary" />
             </div>
           </div>
         </CardContent>
       </Card>
 
-      <Card className="bg-card/50 backdrop-blur-sm border border-white/10">
+      <Card className="bg-card/50 backdrop-blur-sm border border-dashed border-black/15">
         <CardContent className="p-6">
           <div className="flex items-center justify-between">
             <div>
@@ -161,14 +95,14 @@ export default function StatsCards() {
                 +234 from last week
               </p>
             </div>
-            <div className="bg-blue-500/20 p-3 rounded-full">
-              <Activity className="h-6 w-6 text-blue-500" />
+            <div className="bg-blue-500/20 p-3 rounded-full border border-dashed border-black/15">
+              <Activity className="h-6 w-6 text-blue-500  " />
             </div>
           </div>
         </CardContent>
       </Card>
 
-      <Card className="bg-card/50 backdrop-blur-sm border border-white/10">
+      <Card className="bg-card/50 backdrop-blur-sm border border-dashed border-black/15">
         <CardContent className="p-6">
           <div className="flex items-center justify-between">
             <div>
@@ -179,14 +113,14 @@ export default function StatsCards() {
                 +1.3% from last week
               </p>
             </div>
-            <div className="bg-green-500/20 p-3 rounded-full">
+            <div className="bg-green-500/20 p-3 rounded-full border border-dashed border-black/15">
               <BarChart3 className="h-6 w-6 text-green-500" />
             </div>
           </div>
         </CardContent>
       </Card>
 
-      <Card className="bg-card/50 backdrop-blur-sm border border-white/10">
+      <Card className="bg-card/50 backdrop-blur-sm border border-dashed border-black/15">
         <CardContent className="p-6">
           <div className="flex items-center justify-between">
             <div>
@@ -196,7 +130,7 @@ export default function StatsCards() {
                 of monthly quota
               </p>
             </div>
-            <div className="w-12 h-12 rounded-full bg-gradient-to-r from-primary/20 to-primary/10 flex items-center justify-center">
+            <div className="w-12 h-12 rounded-full bg-gradient-to-r from-primary/20 to-primary/10 flex items-center justify-center border border-dashed border-black/15">
               <div className="w-9 h-9 rounded-full border-2 border-primary flex items-center justify-center">
                 <span className="text-xs font-medium">52%</span>
               </div>

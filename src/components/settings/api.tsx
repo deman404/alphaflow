@@ -30,7 +30,7 @@ import {
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
-import { supabase } from "../../../supabaseClient";
+
 export default function api() {
   const handleSave = () => {
     toast.success("Settings updated successfully");

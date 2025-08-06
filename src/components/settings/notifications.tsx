@@ -30,7 +30,6 @@ import {
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
-import { supabase } from "../../../supabaseClient";
 
 export default function notifications() {
   const handleSave = () => {

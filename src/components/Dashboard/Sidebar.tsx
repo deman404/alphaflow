@@ -23,7 +23,6 @@ import {
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "../../../supabaseClient";
 
 interface SidebarProps {
   sidebarCollapsed: boolean;
@@ -37,21 +36,10 @@ const Sidebar: React.FC<SidebarProps> = ({
   const [session, setSession] = useState(null);
   const navigate = useNavigate();
 
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-    });
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-    });
-    return () => subscription.unsubscribe();
-  }, []);
+  
 
   const LogoutSupa = async () => {
-    const { error } = await supabase.auth.signOut();
-    navigate("/");
+    
   };
   return (
     <div

@@ -12,7 +12,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ArrowLeft, FileText, ArrowRight } from "lucide-react";
 import { toast } from "sonner";
-import { supabase } from "../../supabaseClient";
+
 import Header from "@/components/settings/Header";
 import { Skeleton } from "@/components/ui/skeleton";
 import Sidebar from "@/components/settings/Sidebar";

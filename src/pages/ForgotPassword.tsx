@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -14,16 +13,39 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
+import { AuthService } from '../../services/auth';
 
 const ForgotPassword = () => {
   const [email, setEmail] = useState('');
   const [submitted, setSubmitted] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // In a real app, this would send a password reset email
-    setSubmitted(true);
-    toast.success("If an account exists with this email, you'll receive password reset instructions.");
+    setIsLoading(true);
+    setError('');
+
+    try {
+      // Validate email format
+      if (!email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
+        throw new Error('Please enter a valid email address');
+      }
+
+      const { error: resetError } = await AuthService.resetPassword(email);
+      
+      if (resetError) {
+        throw new Error(resetError);
+      }
+
+      setSubmitted(true);
+      toast.success("If an account exists with this email, you'll receive password reset instructions.");
+    } catch (error: any) {
+      setError(error.message);
+      toast.error(error.message);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -52,10 +74,18 @@ const ForgotPassword = () => {
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
+                    className={error ? 'border-destructive' : ''}
                   />
+                  {error && (
+                    <p className="text-sm text-destructive">{error}</p>
+                  )}
                 </div>
-                <Button type="submit" className="w-full">
-                  Send Reset Instructions
+                <Button 
+                  type="submit" 
+                  className="w-full"
+                  disabled={isLoading}
+                >
+                  {isLoading ? "Sending..." : "Send Reset Instructions"}
                 </Button>
               </form>
             ) : (
@@ -68,7 +98,10 @@ const ForgotPassword = () => {
                 </p>
                 <Button 
                   variant="outline" 
-                  onClick={() => setSubmitted(false)}
+                  onClick={() => {
+                    setSubmitted(false);
+                    setEmail('');
+                  }}
                   className="w-full"
                 >
                   Try again

@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { List } from "lucide-react";
-import { supabase } from "../../../supabaseClient";
+
 import FlowsCard from "./FlowsCard";
 import EmptyState from "@/components/EmptyState";
 import { Button } from "@/components/ui/button";

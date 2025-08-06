@@ -4,7 +4,7 @@ import { List, Plus, Settings, User, CircleFadingArrowUp } from "lucide-react";
 import EmptyState from "@/components/EmptyState";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "../../supabaseClient";
+
 import Sidebar from "@/components/settings/Sidebar";
 import {
   Dialog,
@@ -146,9 +146,7 @@ const Workflow = () => {
           },
         ])
         .single();
-        sendNewsForNewWorkflow(FlowName);
-
-      
+      sendNewsForNewWorkflow(FlowName);
 
       if (error) throw error;
 

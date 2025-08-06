@@ -11,88 +11,16 @@ import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { Settings as SettingsIcon, User } from "lucide-react";
 import { toast } from "sonner";
-import { supabase } from "../../../supabaseClient";
+
 export default function profile() {
   const [session, setSession] = useState(null);
   const [company, setCompany] = useState("");
   const [role, setRole] = useState("");
   const [userProfile, setUserProfile] = useState(null);
 
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      if (session?.user?.id) {
-        fetchProfileOrFallback(session);
-      }
-    });
+  const fetchProfileOrFallback = async (session) => {};
 
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-      if (session?.user?.id) {
-        fetchProfileOrFallback(session);
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
-
-  const fetchProfileOrFallback = async (session) => {
-    const userId = session.user.id;
-
-    const { data, error } = await supabase
-      .from("profile")
-      .select("*")
-      .eq("user_id", userId)
-      .single();
-
-    if (error || !data) {
-      console.error("Profile not found, falling back to session data:", error);
-
-      // Fallback to session data
-      const fallbackProfile = {
-        user_id: userId,
-        name: session.user.user_metadata?.name,
-        email: session.user.user_metadata?.email,
-        picture: session.user.user_metadata?.picture,
-      };
-      setUserProfile(fallbackProfile);
-    } else {
-      console.log("Profile loaded from DB:", data);
-      setUserProfile(data);
-    }
-  };
-
-  const handleSave = async () => {
-    const userId = session?.user?.id;
-
-    if (!userId) {
-      toast.error("User session not found.");
-      return;
-    }
-
-    const profileData = {
-      user_id: userId,
-      name: session?.user?.user_metadata?.name,
-      email: session?.user?.user_metadata?.email,
-      picture: session?.user?.user_metadata?.picture,
-      company: company,
-      role: role,
-      plans: "free",
-    };
-
-    const { error } = await supabase
-      .from("profile")
-      .upsert(profileData, { onConflict: "user_id" });
-
-    if (error) {
-      toast.error("Error updating settings");
-      console.error(error);
-    } else {
-      toast.success("Settings updated successfully");
-    }
-  };
+  const handleSave = async () => {};
 
   return (
     <Card className="bg-card/50 backdrop-blur-sm border border-white/10">

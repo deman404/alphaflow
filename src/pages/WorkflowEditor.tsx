@@ -38,7 +38,7 @@ import {
 } from "@/components/ui/sidebar";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
-import { supabase } from "../../supabaseClient";
+
 import { nodeTypes } from "@/components/nodes/index";
 
 // Node types

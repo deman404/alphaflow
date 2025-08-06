@@ -10,7 +10,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
-import { supabase } from "../../../supabaseClient";
+
 import {
   Dialog,
   DialogContent,
@@ -226,7 +226,6 @@ export default function account() {
                   </DialogHeader>
                   <div className="grid gap-4 py-4">
                     <div className="grid grid-cols-4 items-center gap-4">
-                      
                       <Input
                         id="name"
                         placeholder="email address"

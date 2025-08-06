@@ -30,7 +30,7 @@ import {
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
-import { supabase } from "../../../supabaseClient";
+
 import PaymentsCard from "../useComp/PaymentsCard";
 export default function billing() {
   const [session, setSession] = useState(null);

@@ -24,39 +24,42 @@ import Workflow from "./pages/Workflow";
 import WorkflowEditor from "./pages/WorkflowEditor";
 import WorkflowTemplates from "./pages/WorkflowTemplates";
 import Login from "./pages/Login";
+import { AuthProvider } from "../context/AuthContext";
 const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/signup" element={<Signup />} />
-          <Route path="/forgot-password" element={<ForgotPassword />} />
-          <Route path="/about" element={<About />} />
-          <Route path="/contact" element={<Contact />} />
-          <Route path="/documentation" element={<Documentation />} />
-          <Route path="/blog" element={<Blog />} />
-          <Route path="/community" element={<Community />} />
-          <Route path="/tutorials" element={<Tutorials />} />
-          <Route path="/api" element={<API />} />
-          <Route path="/request-feature" element={<RequestFeature />} />
-          <Route path="/careers" element={<Careers />} />
-          <Route path="/privacy" element={<Privacy />} />
-          <Route path="/terms" element={<Terms />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/settings" element={<Settings />} />
-          <Route path="/workflow" element={<Workflow />} />
-          <Route path="/workflows/:workflowId" element={<WorkflowEditor />} />
-          <Route path="/workflow-templates" element={<WorkflowTemplates />} />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
-    </TooltipProvider>
+    <AuthProvider>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<Index />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/signup" element={<Signup />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/about" element={<About />} />
+            <Route path="/contact" element={<Contact />} />
+            <Route path="/documentation" element={<Documentation />} />
+            <Route path="/blog" element={<Blog />} />
+            <Route path="/community" element={<Community />} />
+            <Route path="/tutorials" element={<Tutorials />} />
+            <Route path="/api" element={<API />} />
+            <Route path="/request-feature" element={<RequestFeature />} />
+            <Route path="/careers" element={<Careers />} />
+            <Route path="/privacy" element={<Privacy />} />
+            <Route path="/terms" element={<Terms />} />
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/settings" element={<Settings />} />
+            <Route path="/workflow" element={<Workflow />} />
+            <Route path="/workflows/:workflowId" element={<WorkflowEditor />} />
+            <Route path="/workflow-templates" element={<WorkflowTemplates />} />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </BrowserRouter>
+      </TooltipProvider>
+    </AuthProvider>
   </QueryClientProvider>
 );
 

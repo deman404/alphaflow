@@ -28,7 +28,7 @@ import {
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "../../../supabaseClient";
+
 import { toast } from "sonner";
 
 interface News {
@@ -52,46 +52,9 @@ export default function RecentActivities() {
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      if (session?.user?.id) {
-        fetchProfileOrFallback(session);
-      }
-    });
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-      if (session?.user?.id) {
-        fetchProfileOrFallback(session);
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
+  
   const fetchProfileOrFallback = async (session) => {
-    const userId = session.user.id;
-
-    const { data, error } = await supabase
-      .from("profile")
-      .select("*")
-      .eq("user_id", userId)
-      .single();
-
-    if (error || !data) {
-      // Fallback to session data
-      const fallbackProfile = {
-        user_id: userId,
-        name: session.user.user_metadata?.name,
-        email: session.user.user_metadata?.email,
-        picture: session.user.user_metadata?.picture,
-      };
-      setUserProfile(fallbackProfile);
-    } else {
-      setUserProfile(data);
-    }
+    
   };
   const IconShanger = (isLabel: String) => {
     switch (isLabel) {
@@ -107,33 +70,16 @@ export default function RecentActivities() {
         return null;
     }
   };
-  useEffect(() => {
-    if (!session?.user?.id) return;
-
-    const fetchThemplates = async () => {
-      const { error, data } = await supabase
-        .from("news")
-        .select("*")
-        .order("created_at", { ascending: false })
-        .eq("user_id", session.user.id);
-      setDataNews(data || []);
-      if (error) {
-        console.error("Error fetching templates:", error);
-        toast.error("Failed to load templates");
-      }
-    };
-
-    fetchThemplates();
-  }, [session]);
+  
 
   if (dataNews.length === 0) {
     return (
-      <Card className="bg-card/50 backdrop-blur-sm border border-white/10 mb-2">
+      <Card className="bg-card/50 backdrop-blur-sm border border-dashed border-black/15 mb-2">
         <CardContent className="p-6">
           <div className="space-y-6 text-center">
             <div className="flex justify-center items-center">
               {/* You can replace the Activity icon with a fun illustration */}
-              <div className="w-16 h-16 rounded-full flex items-center justify-center bg-gray-500/20">
+              <div className="w-16 h-16 rounded-full flex items-center justify-center bg-gray-500/20 border border-dashed border-black/15">
                 <Activity className="h-6 w-6 text-gray-500 animate-pulse" />
               </div>
             </div>
