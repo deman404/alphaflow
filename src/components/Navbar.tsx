@@ -2,21 +2,38 @@ import React, { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Menu, X } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
-import {
-  User,
-} from "firebase/auth";
-import { AuthService, } from "../../services/auth";
+import { User } from "firebase/auth";
+import { AuthService } from "../../services/auth";
 import { toast } from "sonner";
-
+import { getProfile } from "../../database/Profile";
+interface Profile {
+  name: string;
+  email: string;
+  // Add other profile fields as needed
+}
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [session, setSession] = useState<User | null>(null);
   const navigate = useNavigate();
+  const [userProfile, setUserProfile] = useState<Profile | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Check auth state on component mount
-    const unsubscribe = AuthService.onAuthStateChanged((user) => {
+    const unsubscribe = AuthService.onAuthStateChanged(async (user) => {
       setSession(user);
+      if (user) {
+        try {
+          const { profile, error } = await getProfile(user.email || "");
+          if (error) throw new Error(error);
+          setUserProfile(profile);
+        } catch (error) {
+          toast.error("Failed to load profile");
+        } finally {
+          setLoading(false);
+        }
+      } else {
+        setLoading(false);
+      }
     });
 
     return () => unsubscribe();
@@ -25,9 +42,8 @@ const Navbar = () => {
   const handleLogout = async () => {
     try {
       await AuthService.logout();
-      setSession(null);
+      navigate("/login");
       toast.success("Logged out successfully");
-      navigate("/");
     } catch (error) {
       toast.error("Failed to logout");
     }

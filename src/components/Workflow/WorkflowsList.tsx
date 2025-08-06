@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { List } from "lucide-react";
+import { CircleFadingArrowUp, List } from "lucide-react";
 
 import FlowsCard from "./FlowsCard";
 import EmptyState from "@/components/EmptyState";
@@ -33,6 +33,10 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
+import { User } from "firebase/auth";
+import { AuthService } from "../../../services/auth";
+import { getProfile } from "../../../database/Profile";
+
 interface Workflow {
   id: string;
   user_id: string;
@@ -63,8 +67,6 @@ interface WorkflowTemplate {
 export default function WorkflowsList() {
   const [workflows, setWorkflows] = useState<Workflow[]>([]);
   const [visibleCount, setVisibleCount] = useState(5);
-  const [session, setSession] = useState<any>(null);
-  const [userProfile, setUserProfile] = useState<Profile | null>(null);
   const [workflowTemplate, setWorkflowTemplate] =
     useState<WorkflowTemplate | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -73,173 +75,46 @@ export default function WorkflowsList() {
     string | undefined
   >(undefined);
   const navigate = useNavigate();
+  const [session, setSession] = useState<User | null>(null);
+  const [userProfile, setUserProfile] = useState<Profile | null>(null);
+  const [loading, setLoading] = useState(true);
 
   // Initialize session
+
   useEffect(() => {
-    let mounted = true;
-
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (mounted) setSession(session);
-    });
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (mounted) {
-        setSession(session);
-        if (!session) {
-          setWorkflows([]);
-          setUserProfile(null);
-          setWorkflowTemplate(null);
+    const unsubscribe = AuthService.onAuthStateChanged(async (user) => {
+      setSession(user);
+      if (user) {
+        try {
+          const { profile, error } = await getProfile(user.email || "");
+          if (error) throw new Error(error);
+          setUserProfile(profile);
+        } catch (error) {
+          toast.error("Failed to load profile");
+        } finally {
+          setLoading(false);
         }
+      } else {
+        setLoading(false);
       }
     });
 
-    return () => {
-      mounted = false;
-      subscription?.unsubscribe();
-    };
+    return () => unsubscribe();
   }, []);
-
   // Fetch profile
-  useEffect(() => {
-    if (!session?.user?.id) return;
-
-    const fetchProfileData = async () => {
-      setIsLoading(true);
-      try {
-        const profileData = await supabase
-          .from("profile")
-          .select("*")
-          .eq("user_id", session.user.id)
-          .single();
-
-        const profile: Profile =
-          profileData.error || !profileData.data
-            ? {
-                user_id: session.user.id,
-                name: session.user.user_metadata?.name,
-                email: session.user.user_metadata?.email,
-                picture: session.user.user_metadata?.picture,
-              }
-            : profileData.data;
-
-        setUserProfile(profile);
-      } catch (error) {
-        console.error("Error fetching profile:", error);
-        toast.error("Failed to load profile");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchProfileData();
-  }, [session]);
 
   // Fetch workflows
-  useEffect(() => {
-    if (!session?.user?.id) return;
-
-    const fetchWorkflowsData = async () => {
-      setIsLoading(true);
-      try {
-        const workflowsData = await supabase
-          .from("workflows")
-          .select("*")
-          .eq("user_id", session.user.id)
-          .order("created_at", { ascending: false });
-
-        const workflows: Workflow[] = workflowsData.error
-          ? []
-          : workflowsData.data || [];
-        setWorkflows(workflows);
-      } catch (error) {
-        console.error("Error fetching workflows:", error);
-        toast.error("Failed to load workflows");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchWorkflowsData();
-  }, [session]);
 
   // Fetch template
-  useEffect(() => {
-    if (!session?.user?.id) return;
-
-    const fetchTemplateData = async () => {
-      setIsLoading(true);
-      try {
-        const templateData = await supabase
-          .from("workflow_templates")
-          .select("*")
-          .eq("user_id", session.user.id)
-          .single();
-
-        setWorkflowTemplate(templateData.error ? null : templateData.data);
-      } catch (error) {
-        console.error("Error fetching template:", error);
-        toast.error("Failed to load template");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchTemplateData();
-  }, [session]);
 
   // Handle Status Change
-  const handleStatusChange = async (workflowId: string, newStatus: string) => {
-    try {
-      const { error } = await supabase
-        .from("workflows")
-        .update({ status: newStatus })
-        .eq("id", workflowId);
-
-      if (error) throw error;
-
-      setWorkflows((prev) =>
-        prev.map((workflow) =>
-          workflow.id === workflowId
-            ? { ...workflow, status: newStatus }
-            : workflow
-        )
-      );
-      toast.success("Status updated successfully");
-    } catch (error) {
-      console.error("Error updating status:", error);
-      toast.error("Failed to update status");
-    }
-  };
+  const handleStatusChange = async (
+    workflowId: string,
+    newStatus: string
+  ) => {};
 
   // Handle Share Template (using data from workflows)
-  const handleShareTemplate = async (workflowId: string) => {
-    try {
-      const workflowToShare = workflows.find((w) => w.id === workflowId);
-      if (!workflowToShare) return toast.error("Workflow not found.");
-
-      const { flow_name, user_id, data } = workflowToShare;
-
-      const { error } = await supabase.from("workflow_templates").upsert({
-        id: workflowId,
-        name: flow_name,
-        user_id,
-        content: data,
-        updated_at: new Date().toISOString(),
-        description: workflowDescription,
-      });
-
-      if (error) throw error;
-
-      const shareableLink = `${window.location.origin}/shared-template/${workflowId}`;
-      await navigator.clipboard.writeText(shareableLink);
-      toast.success("Template shared! Link copied to clipboard.");
-    } catch (error) {
-      console.error("Error sharing template:", error);
-      toast.error("Failed to share template");
-    }
-  };
+  const handleShareTemplate = async (workflowId: string) => {};
 
   const handleOpenSheetWithTemplate = (workflow: Workflow) => {
     setWorkflowTemplate({
@@ -253,78 +128,21 @@ export default function WorkflowsList() {
     sendNewsForSharedWorkflow(workflow.flow_name);
   };
 
-  const deleteHandler = async (workflowId: string) => {
-    const confirmed = window.confirm(
-      "Are you sure you want to delete this flow?"
-    );
-    if (!confirmed) return;
+  const deleteHandler = async (workflowId: string) => {};
 
-    const { error } = await supabase
-      .from("workflows") // اسم الجدول
-      .delete()
-      .eq("id", workflowId);
+  const sendNewsForSharedWorkflow = async (workflowName: string) => {};
 
-    if (error) {
-      console.error("Failed to delete flow:", error.message);
-      // يمكنك عرض إشعار هنا باستخدام toast أو أي مكتبة
-    } else {
-      console.log("Flow deleted successfully.");
-      sendNewsForDeletedWorkflow(workflowId);
-      // قم هنا بتحديث الواجهة أو الحالة حسب الحاجة
-    }
-  };
+  const sendNewsForDeletedWorkflow = async (workflowId: string) => {};
 
-  const sendNewsForSharedWorkflow = async (workflowName: string) => {
-    try {
-      const { error } = await supabase
-        .from("news")
-        .insert([
-          {
-            user_id: session.user.id,
-            title: "New workflow themplate shared" + workflowName,
-            content: `A new workflow themplate named "${workflowName}" has been shared.`,
-            label: "share",
-            created_at: new Date().toISOString(),
-          },
-        ])
-        .single();
-
-      if (error) throw error;
-
-      toast.success("News sent successfully");
-    } catch (error) {
-      toast.error("Error sending news");
-    }
-  };
-
-  const sendNewsForDeletedWorkflow = async (workflowId: string) => {
-    try {
-      const { error } = await supabase
-        .from("news")
-        .insert([
-          {
-            user_id: session.user.id,
-            title: "You was deleted a workflow with id " + workflowId,
-            content: `"${workflowId}" has been deleted.`,
-            label: "delete",
-            created_at: new Date().toISOString(),
-          },
-        ])
-        .single();
-
-      if (error) throw error;
-
-      toast.success("News sent successfully");
-    } catch (error) {
-      toast.error("Error sending news");
-    }
-  };
-
-  if (isLoading && workflows.length === 0) {
+  if (isLoading || workflows.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center h-64">
-        <p className="text-muted">Loading...</p>
-      </div>
+      <>
+        <EmptyState
+          title="no Workflows found"
+          description="No Workflows found. Create your own workflow or upgrade to a premium plan to access workflow templates."
+          icon={<CircleFadingArrowUp className="h-6 w-6 text-primary" />}
+        />
+      </>
     );
   }
 

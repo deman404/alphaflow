@@ -1,65 +1,49 @@
 import React, { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Settings as SettingsIcon, Bell } from "lucide-react";
-
+import { User } from "firebase/auth";
 import { useNavigate } from "react-router-dom";
+import { getProfile } from "../../../database/Profile";
+import { AuthService } from "../../../services/auth";
+import { toast } from "sonner";
 
 interface HeaderProps {
   hname: String;
   hdescription: String;
 }
-
+interface Profile {
+  name: string;
+  email: string;
+  // Add other profile fields as needed
+}
 export default function Header({ hname, hdescription }: HeaderProps) {
-  const [session, setSession] = useState(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [userProfile, setUserProfile] = useState(null);
-
   const navigate = useNavigate();
+  const [session, setSession] = useState<User | null>(null);
+  const [userProfile, setUserProfile] = useState<Profile | null>(null);
+  const [loading, setLoading] = useState(true);
+
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      if (session?.user?.id) {
-        fetchProfileOrFallback(session);
+    const unsubscribe = AuthService.onAuthStateChanged(async (user) => {
+      setSession(user);
+      if (user) {
+        try {
+          const { profile, error } = await getProfile(user.email || "");
+          if (error) throw new Error(error);
+          setUserProfile(profile);
+        } catch (error) {
+          toast.error("Failed to load profile");
+        } finally {
+          setLoading(false);
+        }
+      } else {
+        setLoading(false);
       }
     });
 
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-      if (session?.user?.id) {
-        fetchProfileOrFallback(session);
-      }
-    });
-
-    return () => subscription.unsubscribe();
+    return () => unsubscribe();
   }, []);
 
-  const fetchProfileOrFallback = async (session) => {
-    const userId = session.user.id;
-
-    const { data, error } = await supabase
-      .from("profile")
-      .select("*")
-      .eq("user_id", userId)
-      .single();
-
-    if (error || !data) {
-      console.error("Profile not found, falling back to session data:", error);
-
-      // Fallback to session data
-      const fallbackProfile = {
-        user_id: userId,
-        name: session.user.user_metadata?.name,
-        email: session.user.user_metadata?.email,
-        picture: session.user.user_metadata?.picture,
-      };
-      setUserProfile(fallbackProfile);
-    } else {
-      console.log("Profile loaded from DB:", data);
-      setUserProfile(data);
-    }
-  };
   return (
     <div className="flex justify-between items-center mb-8">
       <div>
@@ -67,13 +51,17 @@ export default function Header({ hname, hdescription }: HeaderProps) {
         <p className="text-muted-foreground">{hdescription}</p>
       </div>
       <div className="flex items-center space-x-3">
-        <Button variant="outline" size="icon" className="relative">
+        <Button
+          variant="outline"
+          size="icon"
+          className="relative border border-dashed border-black/15"
+        >
           <Bell className="h-4 w-4" />
           <span className="absolute -top-1 -right-1 w-2 h-2 bg-primary rounded-full"></span>
         </Button>
-        <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
+        <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center border border-dashed border-black/15">
           <span className="text-sm font-medium">
-            {userProfile?.name.toString().charAt(0)}
+            {session?.displayName.toString().charAt(0)}
           </span>
         </div>
       </div>

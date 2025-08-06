@@ -9,18 +9,85 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
-import { Settings as SettingsIcon, User } from "lucide-react";
+import { Settings as SettingsIcon, Users } from "lucide-react";
 import { toast } from "sonner";
+import { User } from "firebase/auth";
+import { getProfile, upsertProfile } from "../../../database/Profile";
+import { AuthService } from "../../../services/auth";
+import { error } from "console";
+
+interface Profile {
+  name: string;
+  email: string;
+  company: string;
+  role: string;
+}
 
 export default function profile() {
-  const [session, setSession] = useState(null);
   const [company, setCompany] = useState("");
   const [role, setRole] = useState("");
-  const [userProfile, setUserProfile] = useState(null);
+  const [session, setSession] = useState<User | null>(null);
+  const [userProfile, setUserProfile] = useState<Profile | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  const fetchProfileOrFallback = async (session) => {};
+  useEffect(() => {
+    const unsubscribe = AuthService.onAuthStateChanged(async (user) => {
+      setSession(user);
+      if (user) {
+        try {
+          const { profile, error } = await getProfile(user.email || "");
+          if (error) throw new Error(error);
+          setUserProfile(profile);
+        } catch (error) {
+          toast.error("Failed to load profile");
+        } finally {
+          setLoading(false);
+        }
+      } else {
+        setLoading(false);
+      }
+    });
 
-  const handleSave = async () => {};
+    return () => unsubscribe();
+  }, []);
+
+  const handleSave = async () => {
+    if (!session?.email) {
+      toast.error("No user session found");
+      return;
+    }
+
+    // Check if there are actual changes
+    if (company === userProfile?.company && role === userProfile?.role) {
+      toast.info("No changes to save");
+      return;
+    }
+
+    try {
+      // Create updated profile object
+      const updatedProfile = {
+        ...userProfile,
+        email: session.email,
+        name: session.displayName || userProfile?.name || "",
+        company: company || userProfile?.company || "",
+        role: role || userProfile?.role || "",
+      };
+
+      // Update state
+      setUserProfile(updatedProfile);
+
+      // Save to database
+      const { error } = await upsertProfile(updatedProfile);
+      if (error) {
+        throw new Error(error);
+      }
+
+      toast.success("Profile updated successfully");
+    } catch (err) {
+      console.error("Failed to save profile:", err);
+      toast.error("Failed to save profile");
+    }
+  };
 
   return (
     <Card className="bg-card/50 backdrop-blur-sm border border-white/10">
@@ -32,16 +99,16 @@ export default function profile() {
         <div className="space-y-6">
           <div className="flex flex-col md:flex-row items-start md:items-center gap-4">
             <div className="w-20 h-20 rounded-full bg-primary/20 flex items-center justify-center">
-              {session?.user?.user_metadata?.avatar_url ? (
+              {session?.photoURL ? (
                 <>
                   <img
-                    src={userProfile?.picture}
+                    src={session?.photoURL}
                     alt="User Avatar"
                     className="w-20 h-20 rounded-full"
                   />
                 </>
               ) : (
-                <User className="h-8 w-8 text-primary" />
+                <Users className="h-8 w-8 text-primary" />
               )}
             </div>
             <div className="space-y-1">

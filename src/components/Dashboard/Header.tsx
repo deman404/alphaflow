@@ -1,70 +1,115 @@
 import React, { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Separator } from "@/components/ui/separator";
-import {
-  LayoutDashboard,
-  Plus,
-  Search,
-  Settings,
-  User,
-  BarChart3,
-  FileText,
-  LogOut,
-  Bell,
-  Clock,
-  Star,
-  Activity,
-  Zap,
-  MoreVertical,
-  ArrowUpRight,
-} from "lucide-react";
-import { Link } from "react-router-dom";
+import { Search, Bell } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { User } from "firebase/auth";
+import { AuthService } from "../../../services/auth";
+import { getProfile } from "../../../database/Profile";
+import { toast } from "sonner";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Skeleton } from "@/components/ui/skeleton";
+
+interface Profile {
+  name: string;
+  email: string;
+  // Add other profile fields as needed
+}
 
 export default function Header() {
-  const [session, setSession] = useState(null);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [userProfile, setUserProfile] = useState(null);
-
   const navigate = useNavigate();
-  
+  const [session, setSession] = useState<User | null>(null);
+  const [userProfile, setUserProfile] = useState<Profile | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  const fetchProfileOrFallback = async (session) => {
-    
+  useEffect(() => {
+    const unsubscribe = AuthService.onAuthStateChanged(async (user) => {
+      setSession(user);
+      if (user) {
+        try {
+          const { profile, error } = await getProfile(user.email || "");
+          if (error) throw new Error(error);
+          setUserProfile(profile);
+        } catch (error) {
+          toast.error("Failed to load profile");
+        } finally {
+          setLoading(false);
+        }
+      } else {
+        setLoading(false);
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  const handleLogout = async () => {
+    try {
+      await AuthService.logout();
+      navigate("/login");
+      toast.success("Logged out successfully");
+    } catch (error) {
+      toast.error("Failed to logout");
+    }
   };
+
   return (
-    <div className="flex justify-between items-center mb-8">
+    <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
       <div>
-        <h1 className="text-3xl font-bold mb-1">Dashboard</h1>
-        <p className="text-muted-foreground">
-          Welcome back, {userProfile?.name}!
-        </p>
+        <h1 className="text-2xl md:text-3xl font-bold">Dashboard</h1>
+        {loading ? (
+          <Skeleton className="h-4 w-48 mt-1" />
+        ) : (
+          <p className="text-muted-foreground">
+            {session
+              ? `Welcome back, ${userProfile?.name || session.email}!`
+              : "Please sign in"}
+          </p>
+        )}
       </div>
-      <div className="flex items-center space-x-3">
-        <div className="relative border border-dashed border-black/15 rounded-md">
+
+      <div className="flex items-center gap-2 w-full md:w-auto ">
+        <div className="relative flex-1 md:flex-none border border-dashed border-black/15 rounded-md">
           <Input
             placeholder="Search workflows..."
-            className="pl-8 bg-background border-white/10 w-60"
+            className="pl-8 bg-background w-full md:w-60 border-none"
           />
           <Search className="h-4 w-4 absolute left-2.5 top-2.5 text-muted-foreground" />
         </div>
-        <Button variant="outline" size="icon" className="relative border border-dashed border-black/15">
+
+        <Button
+          variant="ghost"
+          size="icon"
+          className="relative border border-dashed border-black/15"
+        >
           <Bell className="h-4 w-4" />
-          <span className="absolute -top-1 -right-1 w-2 h-2 bg-primary rounded-full"></span>
+          {/* <span className="absolute -top-1 -right-1 w-2 h-2 bg-primary rounded-full"></span> */}
         </Button>
-        <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center border border-dashed border-black/15">
-          <span className="text-sm font-medium">
-            {userProfile?.name.toString().charAt(0)}
-          </span>
-        </div>
+
+        {loading ? (
+          <Skeleton className="w-8 h-8 rounded-full" />
+        ) : session ? (
+          <button className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center cursor-pointer hover:bg-primary/20 transition-colors border border-dashed border-black/15">
+            <span className="text-sm font-medium">
+              {userProfile?.name?.charAt(0)?.toUpperCase() ||
+                session.email?.charAt(0)?.toUpperCase() ||
+                "U"}
+            </span>
+          </button>
+        ) : (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => navigate("/login")}
+          >
+            Sign In
+          </Button>
+        )}
       </div>
     </div>
   );

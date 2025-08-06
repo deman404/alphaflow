@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { List, Plus, Settings, User, CircleFadingArrowUp } from "lucide-react";
+import { List, Plus, Settings, CircleFadingArrowUp } from "lucide-react";
 import EmptyState from "@/components/EmptyState";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
+import { getProfile } from "../../database/Profile";
 
 import Sidebar from "@/components/settings/Sidebar";
 import {
@@ -30,7 +31,9 @@ import WorkflowsList from "@/components/Workflow/WorkflowsList";
 import Themplates from "@/components/Workflow/themplates";
 import themplates from "@/components/Workflow/themplates";
 import { Content } from "vaul";
-
+import { AuthService } from "../../services/auth";
+import { User } from "firebase/auth";
+import { Skeleton } from "@/components/ui/skeleton";
 interface WorkflowTemplate {
   id: string;
   user_id: string;
@@ -39,18 +42,44 @@ interface WorkflowTemplate {
   description: string;
   complexity: string;
 }
-
+interface Profile {
+  name: string;
+  email: string;
+  // Add other profile fields as needed
+}
 const Workflow = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [activeTab, setActiveTab] = useState("profile");
-  const [session, setSession] = useState(null);
-  const [userProfile, setUserProfile] = useState(null);
   const [FlowName, setFlowName] = useState("");
   const [FlowStatus, setFlowStatus] = useState("private");
   const [isClicked, setIsClicked] = useState(false);
   const [dataTemplates, setDataTemplates] = useState<WorkflowTemplate[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+  const [session, setSession] = useState<User | null>(null);
+  const [userProfile, setUserProfile] = useState<Profile | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const unsubscribe = AuthService.onAuthStateChanged(async (user) => {
+      setSession(user);
+      if (user) {
+        try {
+          const { profile, error } = await getProfile(user.email || "");
+          if (error) throw new Error(error);
+          setUserProfile(profile);
+        } catch (error) {
+          toast.error("Failed to load profile");
+        } finally {
+          setLoading(false);
+        }
+      } else {
+        setLoading(false);
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   const toggleSidebar = () => {
     setSidebarCollapsed((prev) => !prev);
@@ -59,47 +88,7 @@ const Workflow = () => {
     navigate("/workflow-templates");
   };
 
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      if (session?.user?.id) {
-        fetchProfileOrFallback(session);
-      }
-    });
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-      if (session?.user?.id) {
-        fetchProfileOrFallback(session);
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
-  const fetchProfileOrFallback = async (session) => {
-    const userId = session.user.id;
-
-    const { data, error } = await supabase
-      .from("profile")
-      .select("*")
-      .eq("user_id", userId)
-      .single();
-
-    if (error || !data) {
-      // Fallback to session data
-      const fallbackProfile = {
-        user_id: userId,
-        name: session.user.user_metadata?.name,
-        email: session.user.user_metadata?.email,
-        picture: session.user.user_metadata?.picture,
-      };
-      setUserProfile(fallbackProfile);
-    } else {
-      setUserProfile(data);
-    }
-  };
+  const fetchProfileOrFallback = async (session) => {};
   const Spinner = () => (
     <svg
       className="animate-spin h-4 w-4 text-white mr-2"
@@ -126,102 +115,12 @@ const Workflow = () => {
   //handle create new workflow
   const handleCreateNewWorkflow = async () => {
     if (isClicked) return;
-
-    setIsClicked(true);
-
-    try {
-      const { data, error } = await supabase
-        .from("workflows")
-        .insert([
-          {
-            user_id: session.user.id,
-            flow_name: FlowName,
-            status: FlowStatus,
-            data: {
-              nodes: [],
-              edges: [],
-            },
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          },
-        ])
-        .single();
-      sendNewsForNewWorkflow(FlowName);
-
-      if (error) throw error;
-
-      toast.success("Workflow created successfully");
-      setFlowName("");
-      setFlowStatus(""); // Reset status as well
-      // navigate(`/workflows/${data.id}`);
-    } catch (error) {
-      toast.error("Error creating workflow");
-    } finally {
-      setIsClicked(false);
-    }
   };
 
   //send news for new workflow
-  const sendNewsForNewWorkflow = async (workflowName: string) => {
-    try {
-      const { error } = await supabase
-        .from("news")
-        .insert([
-          {
-            user_id: session.user.id,
-            title: "New workflow created" + workflowName,
-            content: `A new workflow named "${workflowName}" has been created.`,
-            label: "new",
-            created_at: new Date().toISOString(),
-          },
-        ])
-        .single();
+  const sendNewsForNewWorkflow = async (workflowName: string) => {};
 
-      if (error) throw error;
-
-      toast.success("News sent successfully");
-    } catch (error) {
-      toast.error("Error sending news");
-    }
-  };
-
-  // Fetch templates from the database
-  useEffect(() => {
-    if (!session?.user?.id) return;
-
-    const fetchThemplates = async () => {
-      const { error, data } = await supabase
-        .from("workflow_templates")
-        .select("*")
-        .order("created_at", { ascending: false })
-        .eq("user_id", session.user.id);
-      setDataTemplates(data || []);
-      if (error) {
-        console.error("Error fetching templates:", error);
-        toast.error("Failed to load templates");
-      }
-    };
-
-    fetchThemplates();
-  }, [session]);
-
-  const deleteHandler = async (workflowId: string) => {
-    const confirmed = window.confirm(
-      "Are you sure you want to delete this flow?"
-    );
-    if (!confirmed) return;
-
-    const { error } = await supabase
-      .from("workflow_templates")
-      .delete()
-      .eq("id", workflowId);
-
-    if (error) {
-      console.error("Failed to delete flow:", error.message);
-    } else {
-      console.log("Flow deleted successfully.");
-    }
-  };
+  const deleteHandler = async (workflowId: string) => {};
 
   return (
     <div className="min-h-screen bg-background text-foreground flex">
@@ -243,17 +142,25 @@ const Workflow = () => {
                 Manage your AI workflows and automations
               </p>
             </div>
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                <div className="h-10 w-10 rounded-full overflow-hidden border-2 border-primary">
-                  <img
-                    src={userProfile?.picture || ""}
-                    alt={"profile picture"}
-                    className="h-full w-full object-cover"
-                  />
-                </div>
-              </div>
-            </div>
+            {loading ? (
+              <Skeleton className="w-8 h-8 rounded-full" />
+            ) : session ? (
+              <button className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center cursor-pointer hover:bg-primary/20 transition-colors border border-dashed border-black/15">
+                <span className="text-sm font-medium">
+                  {userProfile?.name?.charAt(0)?.toUpperCase() ||
+                    session.email?.charAt(0)?.toUpperCase() ||
+                    "U"}
+                </span>
+              </button>
+            ) : (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigate("/login")}
+              >
+                Sign In
+              </Button>
+            )}
           </header>
 
           <div className="flex justify-between items-center mb-6">
@@ -332,7 +239,7 @@ const Workflow = () => {
 
           {/* Workflow Templates Section */}
 
-          {userProfile?.user_id != null && dataTemplates.length > 0 ? (
+          {session?.email != null && dataTemplates.length > 0 ? (
             <>
               <div className="flex justify-between items-center mb-6 mt-12">
                 <h2 className="text-xl font-semibold">
